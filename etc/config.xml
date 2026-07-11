@@ -1,0 +1,12 @@
+<?xml version="1.0"?>
+<config xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:noNamespaceSchemaLocation="urn:magento:module:Magento_Store:etc/config.xsd">
+    <default>
+        <mcp>
+            <general>
+                <enable_public_tools>1</enable_public_tools>
+                <enable_write_tools>0</enable_write_tools>
+                <log_full_requests>0</log_full_requests>
+            </general>
+        </mcp>
+    </default>
+</config>

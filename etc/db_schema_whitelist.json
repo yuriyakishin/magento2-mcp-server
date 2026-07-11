@@ -1,0 +1,49 @@
+{
+    "mcp_oauth_client": {
+        "column": {
+            "entity_id": true,
+            "client_id": true,
+            "client_name": true,
+            "redirect_uris": true,
+            "created_at": true
+        },
+        "constraint": {
+            "PRIMARY": true,
+            "MCP_OAUTH_CLIENT_CLIENT_ID": true
+        }
+    },
+    "mcp_oauth_auth_code": {
+        "column": {
+            "entity_id": true,
+            "code": true,
+            "client_id": true,
+            "admin_user_id": true,
+            "code_challenge": true,
+            "code_challenge_method": true,
+            "redirect_uri": true,
+            "expires_at": true,
+            "used_at": true
+        },
+        "constraint": {
+            "PRIMARY": true,
+            "MCP_OAUTH_AUTH_CODE_CODE": true
+        }
+    },
+    "mcp_oauth_token": {
+        "column": {
+            "entity_id": true,
+            "access_token": true,
+            "refresh_token": true,
+            "client_id": true,
+            "admin_user_id": true,
+            "expires_at": true,
+            "revoked_at": true,
+            "created_at": true
+        },
+        "constraint": {
+            "PRIMARY": true,
+            "MCP_OAUTH_TOKEN_ACCESS_TOKEN": true,
+            "MCP_OAUTH_TOKEN_REFRESH_TOKEN": true
+        }
+    }
+}

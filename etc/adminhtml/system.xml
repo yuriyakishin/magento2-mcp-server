@@ -1,0 +1,29 @@
+<?xml version="1.0"?>
+<config xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+        xsi:noNamespaceSchemaLocation="urn:magento:module:Magento_Config:etc/system_file.xsd">
+    <system>
+        <section id="mcp" translate="label" type="text" sortOrder="1000" showInDefault="1" showInWebsite="0" showInStore="0">
+            <label>MCP Server</label>
+            <tab>service</tab>
+            <resource>Magento_Config::config</resource>
+            <group id="general" translate="label" type="text" sortOrder="10" showInDefault="1" showInWebsite="0" showInStore="0">
+                <label>General</label>
+                <field id="enable_public_tools" translate="label comment" type="select" sortOrder="3" showInDefault="1" showInWebsite="0" showInStore="0">
+                    <label>Enable Public (Anonymous) Tools</label>
+                    <source_model>Magento\Config\Model\Config\Source\Yesno</source_model>
+                    <comment>Allows anonymous MCP clients to call the public catalog tools (product_search, product_get, etc). These expose only storefront-visible data, and anonymous calls are rate-limited per IP. Disable to require an admin login for every tool call; tool discovery (tools/list) stays open either way. Enabled by default.</comment>
+                </field>
+                <field id="enable_write_tools" translate="label comment" type="select" sortOrder="5" showInDefault="1" showInWebsite="0" showInStore="0">
+                    <label>Enable Write Tools</label>
+                    <source_model>Magento\Config\Model\Config\Source\Yesno</source_model>
+                    <comment>Allows MCP clients to create catalog data (category_create, product_create). Callers still need an authenticated admin with the matching ACL rights; this switch controls whether write tools are exposed at all. Disabled by default.</comment>
+                </field>
+                <field id="log_full_requests" translate="label comment" type="select" sortOrder="10" showInDefault="1" showInWebsite="0" showInStore="0">
+                    <label>Log Full Request/Response Bodies (Debug)</label>
+                    <source_model>Magento\Config\Model\Config\Source\Yesno</source_model>
+                    <comment>Logs the complete JSON-RPC request and response bodies to var/log/mcp.log at debug level. May include personal data (customer emails, order numbers, etc). Keep disabled in production; enable only temporarily while debugging a client connection.</comment>
+                </field>
+            </group>
+        </section>
+    </system>
+</config>

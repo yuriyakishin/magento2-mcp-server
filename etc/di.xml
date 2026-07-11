@@ -1,0 +1,105 @@
+<?xml version="1.0"?>
+<config xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+        xsi:noNamespaceSchemaLocation="urn:magento:framework:ObjectManager/etc/config.xsd">
+    <virtualType name="Yu\McpServer\Logger\Logger" type="Monolog\Logger">
+        <arguments>
+            <argument name="name" xsi:type="string">mcpServer</argument>
+            <argument name="handlers" xsi:type="array">
+                <item name="system" xsi:type="object">Yu\McpServer\Logger\Handler</item>
+            </argument>
+        </arguments>
+    </virtualType>
+
+    <type name="Yu\McpServer\Model\JsonRpcHandler">
+        <arguments>
+            <argument name="logger" xsi:type="object">Yu\McpServer\Logger\Logger</argument>
+        </arguments>
+    </type>
+
+    <type name="Yu\McpServer\Model\PromptRegistry">
+        <arguments>
+            <argument name="prompts" xsi:type="array">
+                <item name="morning_report" xsi:type="object">Yu\McpServer\Model\Prompts\Report\MorningReport</item>
+                <item name="store_checkup" xsi:type="object">Yu\McpServer\Model\Prompts\Report\StoreCheckup</item>
+                <item name="recover_carts" xsi:type="object">Yu\McpServer\Model\Prompts\Marketing\RecoverCarts</item>
+                <item name="restock_advisor" xsi:type="object">Yu\McpServer\Model\Prompts\Product\RestockAdvisor</item>
+                <item name="product_content_writer" xsi:type="object">Yu\McpServer\Model\Prompts\Product\ContentWriter</item>
+                <item name="review_moderate_queue" xsi:type="object">Yu\McpServer\Model\Prompts\Review\ModerateQueue</item>
+                <item name="zero_result_rescue" xsi:type="object">Yu\McpServer\Model\Prompts\Search\ZeroResultRescue</item>
+                <item name="sales_dashboard" xsi:type="object">Yu\McpServer\Model\Prompts\Sales\SalesDashboard</item>
+                <item name="sales_trends" xsi:type="object">Yu\McpServer\Model\Prompts\Sales\SalesTrends</item>
+                <item name="product_performance" xsi:type="object">Yu\McpServer\Model\Prompts\Product\ProductPerformance</item>
+            </argument>
+        </arguments>
+    </type>
+
+    <type name="Yu\McpServer\Controller\Index\Index">
+        <arguments>
+            <argument name="logger" xsi:type="object">Yu\McpServer\Logger\Logger</argument>
+        </arguments>
+    </type>
+
+    <type name="Yu\McpServer\Controller\Oauth\Authorize">
+        <arguments>
+            <argument name="logger" xsi:type="object">Yu\McpServer\Logger\Logger</argument>
+        </arguments>
+    </type>
+
+    <!-- Soft dependency on Magento_TwoFactorAuth: proxies defer instantiation until first
+         use, and TwoFactorService only touches them after Module\Manager confirms the
+         module is enabled — so the MCP module still installs on stores with 2FA disabled,
+         where the vendor di.xml (and thus the TfaInterface preference) isn't loaded. -->
+    <type name="Yu\McpServer\Model\Auth\TwoFactorService">
+        <arguments>
+            <argument name="tfa" xsi:type="object">Magento\TwoFactorAuth\Api\TfaInterface\Proxy</argument>
+            <argument name="googleEngine" xsi:type="object">Magento\TwoFactorAuth\Model\Provider\Engine\Google\Proxy</argument>
+        </arguments>
+    </type>
+
+    <type name="Yu\McpServer\Model\ToolRegistry">
+        <arguments>
+            <argument name="tools" xsi:type="array">
+                <item name="product_search" xsi:type="object">Yu\McpServer\Model\Tools\Product\SearchProducts</item>
+                <item name="product_get" xsi:type="object">Yu\McpServer\Model\Tools\Product\GetProductDetails</item>
+                <item name="category_tree" xsi:type="object">Yu\McpServer\Model\Tools\Category\GetCategories</item>
+                <item name="product_low_stock" xsi:type="object">Yu\McpServer\Model\Tools\Product\GetLowStockProducts</item>
+                <item name="product_check_stock" xsi:type="object">Yu\McpServer\Model\Tools\Product\CheckStock</item>
+                <item name="category_products" xsi:type="object">Yu\McpServer\Model\Tools\Category\GetCategoryProducts</item>
+                <item name="promotion_list" xsi:type="object">Yu\McpServer\Model\Tools\Marketing\ListActivePromotions</item>
+                <item name="review_list_for_product" xsi:type="object">Yu\McpServer\Model\Tools\Review\GetProductReviews</item>
+                <item name="review_list" xsi:type="object">Yu\McpServer\Model\Tools\Review\ListReviews</item>
+                <item name="review_moderate" xsi:type="object">Yu\McpServer\Model\Tools\Review\ModerateReviews</item>
+                <item name="cms_page_get" xsi:type="object">Yu\McpServer\Model\Tools\Cms\GetCmsPage</item>
+                <item name="cms_block_get" xsi:type="object">Yu\McpServer\Model\Tools\Cms\GetCmsBlock</item>
+                <item name="cms_page_create" xsi:type="object">Yu\McpServer\Model\Tools\Cms\CreateCmsPage</item>
+                <item name="cms_block_create" xsi:type="object">Yu\McpServer\Model\Tools\Cms\CreateCmsBlock</item>
+                <item name="cms_page_update" xsi:type="object">Yu\McpServer\Model\Tools\Cms\UpdateCmsPage</item>
+                <item name="cms_block_update" xsi:type="object">Yu\McpServer\Model\Tools\Cms\UpdateCmsBlock</item>
+                <item name="order_get" xsi:type="object">Yu\McpServer\Model\Tools\Order\GetOrderStatus</item>
+                <item name="order_list_by_customer" xsi:type="object">Yu\McpServer\Model\Tools\Order\GetCustomerOrders</item>
+                <item name="order_list" xsi:type="object">Yu\McpServer\Model\Tools\Order\ListOrders</item>
+                <item name="sales_summary" xsi:type="object">Yu\McpServer\Model\Tools\Sales\GetSalesSummary</item>
+                <item name="cart_list_abandoned" xsi:type="object">Yu\McpServer\Model\Tools\Marketing\GetAbandonedCarts</item>
+                <item name="store_info" xsi:type="object">Yu\McpServer\Model\Tools\Store\GetStoreInfo</item>
+                <item name="customer_search" xsi:type="object">Yu\McpServer\Model\Tools\Customer\SearchCustomers</item>
+                <item name="product_sales_velocity" xsi:type="object">Yu\McpServer\Model\Tools\Product\GetProductSalesVelocity</item>
+                <item name="category_create" xsi:type="object">Yu\McpServer\Model\Tools\Category\CreateCategory</item>
+                <item name="product_create" xsi:type="object">Yu\McpServer\Model\Tools\Product\CreateProduct</item>
+                <item name="product_update_stock" xsi:type="object">Yu\McpServer\Model\Tools\Product\UpdateProductStockStatus</item>
+                <item name="product_update" xsi:type="object">Yu\McpServer\Model\Tools\Product\UpdateProduct</item>
+                <item name="search_terms_report" xsi:type="object">Yu\McpServer\Model\Tools\Search\GetSearchTermsReport</item>
+                <item name="sales_bestsellers" xsi:type="object">Yu\McpServer\Model\Tools\Sales\GetBestsellers</item>
+                <item name="sales_by_category" xsi:type="object">Yu\McpServer\Model\Tools\Sales\GetSalesByCategory</item>
+                <item name="sales_compare_periods" xsi:type="object">Yu\McpServer\Model\Tools\Sales\CompareSalesPeriods</item>
+                <item name="sales_payment_stats" xsi:type="object">Yu\McpServer\Model\Tools\Sales\GetPaymentMethodStats</item>
+                <item name="sales_shipping_stats" xsi:type="object">Yu\McpServer\Model\Tools\Sales\GetShippingMethodStats</item>
+                <item name="catalog_health_report" xsi:type="object">Yu\McpServer\Model\Tools\Catalog\GetCatalogHealthReport</item>
+                <item name="cms_page_list" xsi:type="object">Yu\McpServer\Model\Tools\Cms\ListCmsPages</item>
+                <item name="cms_block_list" xsi:type="object">Yu\McpServer\Model\Tools\Cms\ListCmsBlocks</item>
+                <item name="category_update" xsi:type="object">Yu\McpServer\Model\Tools\Category\UpdateCategory</item>
+                <item name="product_duplicate" xsi:type="object">Yu\McpServer\Model\Tools\Product\DuplicateProduct</item>
+                <item name="system_health" xsi:type="object">Yu\McpServer\Model\Tools\System\GetSystemHealth</item>
+            </argument>
+        </arguments>
+    </type>
+</config>
