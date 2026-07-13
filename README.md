@@ -83,7 +83,7 @@ Example phrases that resolve to tool calls:
 ### Composer (recommended)
 
 ```bash
-composer require yu/module-mcp-server
+composer require yuriyakishin/module-mcp-server
 bin/magento module:enable Yu_McpServer
 bin/magento setup:upgrade        # creates the mcp_oauth_* tables
 bin/magento setup:di:compile
