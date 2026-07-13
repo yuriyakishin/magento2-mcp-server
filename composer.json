@@ -1,6 +1,6 @@
 {
     "name": "yuriyakishin/module-mcp-server",
-    "description": "Connect Claude and other MCP clients to your Magento 2 store: 40+ MCP tools and 10 guided prompts for catalog, orders, CMS, reviews and sales analytics — secured by OAuth 2.1 + PKCE and native Magento ACL",
+    "description": "Magento 2 MCP Server: connect ChatGPT, Claude, Cursor, Grok and other MCP clients to your Magento store with 40+ AI tools, guided prompts, OAuth 2.1 and native Magento ACL.",
     "type": "magento2-module",
     "license": "MIT",
     "keywords": [
