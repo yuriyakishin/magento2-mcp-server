@@ -80,14 +80,20 @@ Example phrases that resolve to tool calls:
 
 ## Installation
 
-Copy the module to `app/code/Yu/McpServer`, then:
+### Composer (recommended)
 
 ```bash
+composer require yu/module-mcp-server
 bin/magento module:enable Yu_McpServer
 bin/magento setup:upgrade        # creates the mcp_oauth_* tables
 bin/magento setup:di:compile
 bin/magento cache:flush
 ```
+
+### Manual (app/code)
+
+Copy the module to `app/code/Yu/McpServer` (e.g. `git clone` into that path), then run
+the same `bin/magento` commands as above.
 
 Smoke test:
 
@@ -259,7 +265,7 @@ ObjectManager), data access through repositories/collections (no raw SQL), tools
 JSON-RPC — they return arrays or throw exceptions.
 
 ```bash
-# unit tests (234; run setup:di:compile once first — some tests mock generated factories)
+# unit tests (291; run setup:di:compile once first — some tests mock generated factories)
 vendor/bin/phpunit --no-configuration app/code/Yu/McpServer/Test/Unit
 
 # coding standard
