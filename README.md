@@ -1,5 +1,10 @@
 # Magento MCP Server
 
+[![Packagist Version](https://img.shields.io/packagist/v/yuriyakishin/module-mcp-server)](https://packagist.org/packages/yuriyakishin/module-mcp-server)
+[![PHP Version](https://img.shields.io/packagist/dependency-v/yuriyakishin/module-mcp-server/php?label=php)](https://packagist.org/packages/yuriyakishin/module-mcp-server)
+![Magento](https://img.shields.io/badge/magento-2.4.4%2B-orange)
+[![License](https://img.shields.io/packagist/l/yuriyakishin/module-mcp-server)](https://github.com/yuriyakishin/magento2-mcp-server/blob/main/LICENSE)
+
 An [MCP (Model Context Protocol)](https://modelcontextprotocol.io/) server implemented as
 a Magento 2 module. It exposes store operations as typed, access-controlled MCP tools over
 the Streamable HTTP transport, so MCP clients (claude.ai Connectors, Claude Desktop, etc.)
