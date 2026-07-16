@@ -1,9 +1,9 @@
 # Magento MCP Server
 
-[![Packagist Version](https://img.shields.io/packagist/v/yuriyakishin/module-mcp-server)](https://packagist.org/packages/yuriyakishin/module-mcp-server)
-[![PHP Version](https://img.shields.io/packagist/dependency-v/yuriyakishin/module-mcp-server/php?label=php)](https://packagist.org/packages/yuriyakishin/module-mcp-server)
+[![Packagist Version](https://img.shields.io/packagist/v/yu-dev/module-mcp-server)](https://packagist.org/packages/yu-dev/module-mcp-server)
+[![PHP Version](https://img.shields.io/packagist/dependency-v/yu-dev/module-mcp-server/php?label=php)](https://packagist.org/packages/yu-dev/module-mcp-server)
 ![Magento](https://img.shields.io/badge/magento-2.4.4%2B-orange)
-[![License](https://img.shields.io/packagist/l/yuriyakishin/module-mcp-server)](https://github.com/yuriyakishin/magento2-mcp-server/blob/main/LICENSE)
+[![License](https://img.shields.io/packagist/l/yu-dev/module-mcp-server)](https://github.com/yuriyakishin/magento2-mcp-server/blob/main/LICENSE)
 
 An [MCP (Model Context Protocol)](https://modelcontextprotocol.io/) server implemented as
 a Magento 2 module. It exposes store operations as typed, access-controlled MCP tools over
@@ -88,7 +88,7 @@ Example phrases that resolve to tool calls:
 ### Composer (recommended)
 
 ```bash
-composer require yuriyakishin/module-mcp-server
+composer require yu-dev/module-mcp-server
 bin/magento module:enable Yu_McpServer
 bin/magento setup:upgrade        # creates the mcp_oauth_* tables
 bin/magento setup:di:compile
