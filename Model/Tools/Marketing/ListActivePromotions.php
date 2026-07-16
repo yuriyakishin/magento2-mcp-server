@@ -12,7 +12,10 @@ use Yu\McpServer\Model\ToolInterface;
 /**
  * Lists currently active cart price rules. Coupon CODES are deliberately never exposed:
  * whether a code has been published is a marketing decision, not something an anonymous
- * API should decide. Only the fact that a coupon is required is reported.
+ * API should decide. Only the fact that a coupon is required is reported. That guarantee
+ * also covers the rule's own name/description text — merchants routinely paste the code
+ * there ("Use promo code X at checkout"), so occurrences of the rule's coupon code are
+ * redacted from both fields before they leave the tool.
  */
 class ListActivePromotions implements ToolInterface
 {
@@ -85,14 +88,16 @@ class ListActivePromotions implements ToolInterface
 
         $promotions = [];
         foreach ($collection as $rule) {
+            $couponRequired = (int)$rule->getData('coupon_type') !== Rule::COUPON_TYPE_NO_COUPON;
+            $couponCode = $couponRequired ? $this->couponCode($rule) : null;
             $promotions[] = [
-                'name' => $rule->getData('name'),
-                'description' => $rule->getData('description'),
+                'name' => $this->redactCouponCode((string)$rule->getData('name'), $couponCode),
+                'description' => $this->redactCouponCode((string)$rule->getData('description'), $couponCode),
                 'from_date' => $rule->getData('from_date'),
                 'to_date' => $rule->getData('to_date'),
                 'action' => $rule->getData('simple_action'),
-                'discount_amount' => (float) $rule->getData('discount_amount'),
-                'coupon_required' => (int) $rule->getData('coupon_type') !== Rule::COUPON_TYPE_NO_COUPON,
+                'discount_amount' => (float)$rule->getData('discount_amount'),
+                'coupon_required' => $couponRequired,
             ];
         }
 
@@ -103,6 +108,29 @@ class ListActivePromotions implements ToolInterface
     }
 
     /**
+     * The rule's primary coupon code, or null when none is set.
+     */
+    private function couponCode(Rule $rule): ?string
+    {
+        $code = $rule->getPrimaryCoupon() ? (string)$rule->getPrimaryCoupon()->getCode() : '';
+
+        return $code === '' ? null : $code;
+    }
+
+    /**
+     * Removes every occurrence of the rule's coupon code (case-insensitive) from
+     * merchant-authored text, so the code can't leak through name/description.
+     */
+    private function redactCouponCode(string $text, ?string $couponCode): string
+    {
+        if ($couponCode === null || $text === '') {
+            return $text;
+        }
+
+        return trim(str_ireplace($couponCode, '[coupon code hidden]', $text));
+    }
+
+    /**
      * Validates the optional "limit" argument.
      */
     private function limitArgument(array $arguments): int
@@ -110,10 +138,10 @@ class ListActivePromotions implements ToolInterface
         if (!isset($arguments['limit'])) {
             return self::DEFAULT_LIMIT;
         }
-        if (!is_numeric($arguments['limit']) || (int) $arguments['limit'] < 1) {
+        if (!is_numeric($arguments['limit']) || (int)$arguments['limit'] < 1) {
             throw new \InvalidArgumentException('Argument "limit" must be a positive integer.');
         }
 
-        return min((int) $arguments['limit'], self::MAX_LIMIT);
+        return min((int)$arguments['limit'], self::MAX_LIMIT);
     }
 }
