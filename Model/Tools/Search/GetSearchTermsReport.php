@@ -99,9 +99,9 @@ class GetSearchTermsReport implements ToolInterface
         $terms = [];
         foreach ($collection as $query) {
             $terms[] = [
-                'term' => (string) $query->getData('query_text'),
-                'hits' => (int) $query->getData('popularity'),
-                'results' => (int) $query->getData('num_results'),
+                'term' => (string)$query->getData('query_text'),
+                'hits' => (int)$query->getData('popularity'),
+                'results' => (int)$query->getData('num_results'),
             ];
         }
 
@@ -116,10 +116,10 @@ class GetSearchTermsReport implements ToolInterface
         if (!isset($arguments['limit'])) {
             return self::DEFAULT_LIMIT;
         }
-        if (!is_numeric($arguments['limit']) || (int) $arguments['limit'] < 1) {
+        if (!is_numeric($arguments['limit']) || (int)$arguments['limit'] < 1) {
             throw new \InvalidArgumentException('Argument "limit" must be an integer >= 1.');
         }
 
-        return min((int) $arguments['limit'], self::MAX_LIMIT);
+        return min((int)$arguments['limit'], self::MAX_LIMIT);
     }
 }

@@ -40,11 +40,11 @@ class AdminTokenValidator
             throw new UnauthorizedException('The access token has been revoked.');
         }
 
-        if (strtotime((string) $token->getExpiresAt()) <= $this->dateTime->gmtTimestamp()) {
+        if (strtotime((string)$token->getExpiresAt()) <= $this->dateTime->gmtTimestamp()) {
             throw new UnauthorizedException('The access token has expired.');
         }
 
-        $adminId = (int) $token->getAdminUserId();
+        $adminId = (int)$token->getAdminUserId();
 
         return new AdminContext($adminId, $this->resolveAllowedResources($adminId));
     }
@@ -70,7 +70,7 @@ class AdminTokenValidator
             return [];
         }
 
-        $groupRoleId = (int) $userRole->getParentId() ?: (int) $userRole->getId();
+        $groupRoleId = (int)$userRole->getParentId() ?: (int)$userRole->getId();
 
         return $this->aclRetriever->getAllowedResourcesByRole($groupRoleId);
     }

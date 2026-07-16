@@ -61,7 +61,7 @@ class Token implements HttpPostActionInterface, CsrfAwareActionInterface
      */
     public function execute(): ResultInterface
     {
-        $grantType = (string) $this->request->getParam('grant_type', '');
+        $grantType = (string)$this->request->getParam('grant_type', '');
 
         return match ($grantType) {
             'authorization_code' => $this->exchangeAuthorizationCode(),
@@ -78,10 +78,10 @@ class Token implements HttpPostActionInterface, CsrfAwareActionInterface
      */
     private function exchangeAuthorizationCode(): ResultInterface
     {
-        $code = (string) $this->request->getParam('code', '');
-        $redirectUri = (string) $this->request->getParam('redirect_uri', '');
-        $clientId = (string) $this->request->getParam('client_id', '');
-        $codeVerifier = (string) $this->request->getParam('code_verifier', '');
+        $code = (string)$this->request->getParam('code', '');
+        $redirectUri = (string)$this->request->getParam('redirect_uri', '');
+        $clientId = (string)$this->request->getParam('client_id', '');
+        $codeVerifier = (string)$this->request->getParam('code_verifier', '');
 
         if ($code === '' || $redirectUri === '' || $clientId === '' || $codeVerifier === '') {
             return $this->oauthError(
@@ -99,7 +99,7 @@ class Token implements HttpPostActionInterface, CsrfAwareActionInterface
         $now = $this->dateTime->gmtTimestamp();
 
         if ($authCode->getUsedAt() !== null
-            || strtotime((string) $authCode->getExpiresAt()) <= $now
+            || strtotime((string)$authCode->getExpiresAt()) <= $now
             || $authCode->getClientId() !== $clientId
             || $authCode->getRedirectUri() !== $redirectUri
         ) {
@@ -107,14 +107,14 @@ class Token implements HttpPostActionInterface, CsrfAwareActionInterface
         }
 
         $expectedChallenge = rtrim(strtr(base64_encode(hash('sha256', $codeVerifier, true)), '+/', '-_'), '=');
-        if (!hash_equals((string) $authCode->getCodeChallenge(), $expectedChallenge)) {
+        if (!hash_equals((string)$authCode->getCodeChallenge(), $expectedChallenge)) {
             return $this->oauthError('invalid_grant', 'The PKCE code_verifier does not match the code_challenge.');
         }
 
         $authCode->setUsedAt(date('Y-m-d H:i:s', $now));
         $this->authCodeRepository->save($authCode);
 
-        return $this->issueTokenPair((int) $authCode->getAdminUserId(), $clientId);
+        return $this->issueTokenPair((int)$authCode->getAdminUserId(), $clientId);
     }
 
     /**
@@ -122,8 +122,8 @@ class Token implements HttpPostActionInterface, CsrfAwareActionInterface
      */
     private function exchangeRefreshToken(): ResultInterface
     {
-        $refreshToken = (string) $this->request->getParam('refresh_token', '');
-        $clientId = (string) $this->request->getParam('client_id', '');
+        $refreshToken = (string)$this->request->getParam('refresh_token', '');
+        $clientId = (string)$this->request->getParam('client_id', '');
 
         if ($refreshToken === '' || $clientId === '') {
             return $this->oauthError('invalid_request', 'refresh_token and client_id are both required.');
@@ -142,7 +142,7 @@ class Token implements HttpPostActionInterface, CsrfAwareActionInterface
         $token->setRevokedAt(date('Y-m-d H:i:s', $this->dateTime->gmtTimestamp()));
         $this->tokenRepository->save($token);
 
-        return $this->issueTokenPair((int) $token->getAdminUserId(), $clientId);
+        return $this->issueTokenPair((int)$token->getAdminUserId(), $clientId);
     }
 
     /**

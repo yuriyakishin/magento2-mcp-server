@@ -114,7 +114,7 @@ class GetCategoryProducts implements ContextAwareToolInterface
                 'sku' => $product->getSku(),
                 'name' => $product->getName(),
                 'price' => $product->getPrice(),
-                'status' => (int) $product->getStatus() === Status::STATUS_ENABLED ? 'enabled' : 'disabled',
+                'status' => (int)$product->getStatus() === Status::STATUS_ENABLED ? 'enabled' : 'disabled',
             ];
         }
 
@@ -134,13 +134,13 @@ class GetCategoryProducts implements ContextAwareToolInterface
     private function categoryIdArgument(array $arguments): int
     {
         $categoryId = $arguments['category_id'] ?? null;
-        if (!is_numeric($categoryId) || (int) $categoryId < 1) {
+        if (!is_numeric($categoryId) || (int)$categoryId < 1) {
             throw new \InvalidArgumentException(
                 'Argument "category_id" is required and must be a positive integer.'
             );
         }
 
-        return (int) $categoryId;
+        return (int)$categoryId;
     }
 
     /**
@@ -151,10 +151,10 @@ class GetCategoryProducts implements ContextAwareToolInterface
         if (!isset($arguments['limit'])) {
             return self::DEFAULT_LIMIT;
         }
-        if (!is_numeric($arguments['limit']) || (int) $arguments['limit'] < 1) {
+        if (!is_numeric($arguments['limit']) || (int)$arguments['limit'] < 1) {
             throw new \InvalidArgumentException('Argument "limit" must be a positive integer.');
         }
 
-        return min((int) $arguments['limit'], self::MAX_LIMIT);
+        return min((int)$arguments['limit'], self::MAX_LIMIT);
     }
 }

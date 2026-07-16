@@ -109,19 +109,19 @@ class GetBestsellers implements ToolInterface
         $rowsScanned = 0;
         foreach ($collection as $item) {
             $rowsScanned++;
-            $sku = (string) $item->getData('sku');
+            $sku = (string)$item->getData('sku');
             if ($sku === '') {
                 continue;
             }
             $products[$sku] ??= [
                 'sku' => $sku,
-                'name' => (string) $item->getData('name'),
+                'name' => (string)$item->getData('name'),
                 'qty' => 0.0,
                 'revenue' => 0.0,
                 'orders' => 0,
             ];
-            $products[$sku]['qty'] += (float) $item->getData('qty_ordered');
-            $products[$sku]['revenue'] += (float) $item->getData('row_total');
+            $products[$sku]['qty'] += (float)$item->getData('qty_ordered');
+            $products[$sku]['revenue'] += (float)$item->getData('row_total');
             $products[$sku]['orders']++;
         }
 
@@ -171,10 +171,10 @@ class GetBestsellers implements ToolInterface
         if (!isset($arguments['limit'])) {
             return self::DEFAULT_LIMIT;
         }
-        if (!is_numeric($arguments['limit']) || (int) $arguments['limit'] < 1) {
+        if (!is_numeric($arguments['limit']) || (int)$arguments['limit'] < 1) {
             throw new \InvalidArgumentException('Argument "limit" must be an integer >= 1.');
         }
 
-        return min((int) $arguments['limit'], self::MAX_LIMIT);
+        return min((int)$arguments['limit'], self::MAX_LIMIT);
     }
 }

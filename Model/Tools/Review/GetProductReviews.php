@@ -93,7 +93,7 @@ class GetProductReviews implements ToolInterface
 
         $collection = $this->reviewCollectionFactory->create();
         $collection->addStatusFilter(Review::STATUS_APPROVED);
-        $collection->addEntityFilter('product', (int) $product->getId());
+        $collection->addEntityFilter('product', (int)$product->getId());
         $collection->setDateOrder();
         $collection->setPageSize($limit);
         $collection->addRateVotes();
@@ -131,7 +131,7 @@ class GetProductReviews implements ToolInterface
         $sum = 0;
         $count = 0;
         foreach ($votes as $vote) {
-            $sum += (int) $vote->getData('value');
+            $sum += (int)$vote->getData('value');
             $count++;
         }
 
@@ -146,10 +146,10 @@ class GetProductReviews implements ToolInterface
         if (!isset($arguments['limit'])) {
             return self::DEFAULT_LIMIT;
         }
-        if (!is_numeric($arguments['limit']) || (int) $arguments['limit'] < 1) {
+        if (!is_numeric($arguments['limit']) || (int)$arguments['limit'] < 1) {
             throw new \InvalidArgumentException('Argument "limit" must be a positive integer.');
         }
 
-        return min((int) $arguments['limit'], self::MAX_LIMIT);
+        return min((int)$arguments['limit'], self::MAX_LIMIT);
     }
 }

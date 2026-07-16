@@ -75,7 +75,7 @@ class GetCmsBlock implements ToolInterface
         try {
             $block = $this->getBlockByIdentifier->execute(
                 $identifier,
-                (int) $this->storeManager->getStore()->getId()
+                (int)$this->storeManager->getStore()->getId()
             );
         } catch (NoSuchEntityException) {
             throw new \RuntimeException(sprintf('CMS block with identifier "%s" does not exist.', $identifier));
@@ -88,7 +88,7 @@ class GetCmsBlock implements ToolInterface
 
         return [
             'block' => [
-                'id' => (int) $block->getId(),
+                'id' => (int)$block->getId(),
                 'identifier' => $block->getIdentifier(),
                 'title' => $block->getTitle(),
                 'content' => $block->getContent(),

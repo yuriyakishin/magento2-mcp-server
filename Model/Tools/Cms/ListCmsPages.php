@@ -92,17 +92,17 @@ class ListCmsPages implements ToolInterface
         $pages = [];
         foreach ($collection as $page) {
             $pages[] = [
-                'id' => (int) $page->getId(),
-                'identifier' => (string) $page->getData('identifier'),
-                'title' => (string) $page->getData('title'),
-                'is_active' => (bool) $page->getData('is_active'),
-                'created_at' => (string) $page->getData('creation_time'),
-                'updated_at' => (string) $page->getData('update_time'),
+                'id' => (int)$page->getId(),
+                'identifier' => (string)$page->getData('identifier'),
+                'title' => (string)$page->getData('title'),
+                'is_active' => (bool)$page->getData('is_active'),
+                'created_at' => (string)$page->getData('creation_time'),
+                'updated_at' => (string)$page->getData('update_time'),
             ];
         }
 
         return [
-            'total' => (int) $collection->getSize(),
+            'total' => (int)$collection->getSize(),
             'pages' => $pages,
         ];
     }
@@ -130,10 +130,10 @@ class ListCmsPages implements ToolInterface
         if (!isset($arguments['limit'])) {
             return self::DEFAULT_LIMIT;
         }
-        if (!is_numeric($arguments['limit']) || (int) $arguments['limit'] < 1) {
+        if (!is_numeric($arguments['limit']) || (int)$arguments['limit'] < 1) {
             throw new \InvalidArgumentException('Argument "limit" must be an integer >= 1.');
         }
 
-        return min((int) $arguments['limit'], self::MAX_LIMIT);
+        return min((int)$arguments['limit'], self::MAX_LIMIT);
     }
 }

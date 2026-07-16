@@ -61,8 +61,8 @@ class ContentWriter implements PromptInterface
         if (!is_string($limit) && !is_int($limit)) {
             throw new \InvalidArgumentException('Argument "limit" must be a number of products, 1-10.');
         }
-        $limit = trim((string) $limit);
-        if (!ctype_digit($limit) || (int) $limit < 1 || (int) $limit > 10) {
+        $limit = trim((string)$limit);
+        if (!ctype_digit($limit) || (int)$limit < 1 || (int)$limit > 10) {
             throw new \InvalidArgumentException('Argument "limit" must be a number of products, 1-10.');
         }
 

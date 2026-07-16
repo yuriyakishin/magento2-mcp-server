@@ -130,10 +130,10 @@ class GetSalesByCategory implements ToolInterface
         $rowsScanned = 0;
         foreach ($collection as $item) {
             $rowsScanned++;
-            $productId = (int) $item->getData('product_id');
+            $productId = (int)$item->getData('product_id');
             $perProduct[$productId] ??= ['qty' => 0.0, 'revenue' => 0.0];
-            $perProduct[$productId]['qty'] += (float) $item->getData('qty_ordered');
-            $perProduct[$productId]['revenue'] += (float) $item->getData('row_total');
+            $perProduct[$productId]['qty'] += (float)$item->getData('qty_ordered');
+            $perProduct[$productId]['revenue'] += (float)$item->getData('row_total');
         }
 
         return [$perProduct, $rowsScanned === self::ITEM_SCAN_LIMIT];
@@ -216,7 +216,7 @@ class GetSalesByCategory implements ToolInterface
 
         $map = [];
         foreach ($collection as $product) {
-            $map[(int) $product->getId()] = array_map('intval', (array) $product->getCategoryIds());
+            $map[(int)$product->getId()] = array_map('intval', (array)$product->getCategoryIds());
         }
 
         return $map;
@@ -239,7 +239,7 @@ class GetSalesByCategory implements ToolInterface
 
         $names = [];
         foreach ($collection as $category) {
-            $names[(int) $category->getId()] = (string) $category->getName();
+            $names[(int)$category->getId()] = (string)$category->getName();
         }
 
         return $names;
@@ -253,10 +253,10 @@ class GetSalesByCategory implements ToolInterface
         if (!isset($arguments['limit'])) {
             return self::DEFAULT_LIMIT;
         }
-        if (!is_numeric($arguments['limit']) || (int) $arguments['limit'] < 1) {
+        if (!is_numeric($arguments['limit']) || (int)$arguments['limit'] < 1) {
             throw new \InvalidArgumentException('Argument "limit" must be an integer >= 1.');
         }
 
-        return min((int) $arguments['limit'], self::MAX_LIMIT);
+        return min((int)$arguments['limit'], self::MAX_LIMIT);
     }
 }

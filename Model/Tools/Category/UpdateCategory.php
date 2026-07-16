@@ -118,7 +118,7 @@ class UpdateCategory implements WriteToolInterface
             throw new \RuntimeException(sprintf('Category with ID %d does not exist.', $categoryId));
         }
 
-        if ((int) $category->getLevel() < 2) {
+        if ((int)$category->getLevel() < 2) {
             throw new \RuntimeException(
                 sprintf('Category with ID %d is a root category and cannot be edited by this tool.', $categoryId)
             );
@@ -149,8 +149,8 @@ class UpdateCategory implements WriteToolInterface
     {
         return match ($field) {
             'name' => $category->getName(),
-            'is_active' => (bool) $category->getIsActive(),
-            'include_in_menu' => (bool) $category->getData('include_in_menu'),
+            'is_active' => (bool)$category->getIsActive(),
+            'include_in_menu' => (bool)$category->getData('include_in_menu'),
             default => $category->getData($field),
         };
     }
@@ -174,14 +174,14 @@ class UpdateCategory implements WriteToolInterface
     private function categoryIdArgument(array $arguments): int
     {
         if (!isset($arguments['category_id']) || !is_numeric($arguments['category_id'])
-            || (int) $arguments['category_id'] < 1
+            || (int)$arguments['category_id'] < 1
         ) {
             throw new \InvalidArgumentException(
                 'Argument "category_id" is required and must be a positive integer.'
             );
         }
 
-        return (int) $arguments['category_id'];
+        return (int)$arguments['category_id'];
     }
 
     /**

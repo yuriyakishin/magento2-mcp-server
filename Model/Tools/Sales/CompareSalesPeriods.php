@@ -124,13 +124,13 @@ class CompareSalesPeriods implements ToolInterface
         $byCurrency = [];
         foreach ($collection as $order) {
             $ordersTotal++;
-            if ((string) $order->getData('state') === Order::STATE_CANCELED) {
+            if ((string)$order->getData('state') === Order::STATE_CANCELED) {
                 continue;
             }
-            $currency = (string) ($order->getData('order_currency_code') ?: 'unknown');
+            $currency = (string)($order->getData('order_currency_code') ?: 'unknown');
             $byCurrency[$currency] ??= ['orders' => 0, 'revenue' => 0.0];
             $byCurrency[$currency]['orders']++;
-            $byCurrency[$currency]['revenue'] += (float) $order->getData('grand_total');
+            $byCurrency[$currency]['revenue'] += (float)$order->getData('grand_total');
         }
 
         $currencyRows = [];
@@ -171,14 +171,14 @@ class CompareSalesPeriods implements ToolInterface
             $b = $currenciesB[$currency] ?? ['orders' => 0, 'revenue' => 0.0, 'avg_order_value' => 0.0];
             $byCurrency[] = [
                 'currency' => $currency,
-                'orders_pct' => $this->pct((float) $a['orders'], (float) $b['orders']),
-                'revenue_pct' => $this->pct((float) $a['revenue'], (float) $b['revenue']),
-                'avg_order_value_pct' => $this->pct((float) $a['avg_order_value'], (float) $b['avg_order_value']),
+                'orders_pct' => $this->pct((float)$a['orders'], (float)$b['orders']),
+                'revenue_pct' => $this->pct((float)$a['revenue'], (float)$b['revenue']),
+                'avg_order_value_pct' => $this->pct((float)$a['avg_order_value'], (float)$b['avg_order_value']),
             ];
         }
 
         return [
-            'orders_total_pct' => $this->pct((float) $periodA['orders_total'], (float) $periodB['orders_total']),
+            'orders_total_pct' => $this->pct((float)$periodA['orders_total'], (float)$periodB['orders_total']),
             'by_currency' => $byCurrency,
         ];
     }

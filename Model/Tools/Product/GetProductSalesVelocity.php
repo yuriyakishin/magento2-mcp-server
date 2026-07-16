@@ -104,8 +104,8 @@ class GetProductSalesVelocity implements ToolInterface
         $isInStock = null;
         try {
             $stockItem = $this->stockRegistry->getStockItemBySku($sku);
-            $stockQty = (float) $stockItem->getQty();
-            $isInStock = (bool) $stockItem->getIsInStock();
+            $stockQty = (float)$stockItem->getQty();
+            $isInStock = (bool)$stockItem->getIsInStock();
         } catch (NoSuchEntityException) {
             // Composite products have no stock row of their own — report stock as unknown.
         }
@@ -127,7 +127,7 @@ class GetProductSalesVelocity implements ToolInterface
         ];
 
         if ($perDay > 0 && $stockQty !== null && $stockQty > 0) {
-            $daysLeft = (int) floor($stockQty / $perDay);
+            $daysLeft = (int)floor($stockQty / $perDay);
             $result['estimated_days_left'] = $daysLeft;
             $result['estimated_stockout_date'] = date('Y-m-d', $now + $daysLeft * 86400);
         }
@@ -153,13 +153,13 @@ class GetProductSalesVelocity implements ToolInterface
         $revenue = 0.0;
         $orderIds = [];
         foreach ($collection as $item) {
-            $net = (float) $item->getData('qty_ordered') - (float) $item->getData('qty_canceled');
+            $net = (float)$item->getData('qty_ordered') - (float)$item->getData('qty_canceled');
             if ($net <= 0) {
                 continue;
             }
             $units += $net;
-            $revenue += (float) $item->getData('row_total');
-            $orderIds[(int) $item->getData('order_id')] = true;
+            $revenue += (float)$item->getData('row_total');
+            $orderIds[(int)$item->getData('order_id')] = true;
         }
 
         return [$units, count($orderIds), $revenue];
@@ -186,10 +186,10 @@ class GetProductSalesVelocity implements ToolInterface
         if (!isset($arguments['days'])) {
             return self::DEFAULT_DAYS;
         }
-        if (!is_numeric($arguments['days']) || (int) $arguments['days'] < 1) {
+        if (!is_numeric($arguments['days']) || (int)$arguments['days'] < 1) {
             throw new \InvalidArgumentException('Argument "days" must be a positive integer.');
         }
 
-        return min((int) $arguments['days'], self::MAX_DAYS);
+        return min((int)$arguments['days'], self::MAX_DAYS);
     }
 }

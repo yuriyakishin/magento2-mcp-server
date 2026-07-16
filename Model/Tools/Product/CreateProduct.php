@@ -123,11 +123,11 @@ class CreateProduct implements WriteToolInterface
         $product->setSku($sku);
         $product->setName($name);
         $product->setTypeId(Type::TYPE_SIMPLE);
-        $product->setAttributeSetId((int) $product->getDefaultAttributeSetId());
+        $product->setAttributeSetId((int)$product->getDefaultAttributeSetId());
         $product->setPrice($price);
         $product->setStatus($status);
         $product->setVisibility(Visibility::VISIBILITY_BOTH);
-        $product->setWebsiteIds([(int) $this->storeManager->getStore()->getWebsiteId()]);
+        $product->setWebsiteIds([(int)$this->storeManager->getStore()->getWebsiteId()]);
         // Read by CatalogInventory's SaveInventoryDataObserver during save — the standard
         // way to seed stock together with the product instead of a second save call.
         $product->setStockData([
@@ -150,11 +150,11 @@ class CreateProduct implements WriteToolInterface
 
         return [
             'product' => [
-                'id' => (int) $saved->getId(),
+                'id' => (int)$saved->getId(),
                 'sku' => $saved->getSku(),
                 'name' => $saved->getName(),
-                'price' => (float) $saved->getPrice(),
-                'status' => (int) $saved->getStatus() === Status::STATUS_ENABLED ? 'enabled' : 'disabled',
+                'price' => (float)$saved->getPrice(),
+                'status' => (int)$saved->getStatus() === Status::STATUS_ENABLED ? 'enabled' : 'disabled',
                 'qty' => $qty,
                 'category_ids' => $categoryIds,
             ],
@@ -184,11 +184,11 @@ class CreateProduct implements WriteToolInterface
             throw new \InvalidArgumentException('Argument "name" is required and must be a non-empty string.');
         }
 
-        if (!isset($arguments['price']) || !is_numeric($arguments['price']) || (float) $arguments['price'] < 0) {
+        if (!isset($arguments['price']) || !is_numeric($arguments['price']) || (float)$arguments['price'] < 0) {
             throw new \InvalidArgumentException('Argument "price" is required and must be a number >= 0.');
         }
 
-        return [$sku, trim($name), (float) $arguments['price']];
+        return [$sku, trim($name), (float)$arguments['price']];
     }
 
     /**
@@ -199,11 +199,11 @@ class CreateProduct implements WriteToolInterface
         if (!isset($arguments[$key])) {
             return $default;
         }
-        if (!is_numeric($arguments[$key]) || (float) $arguments[$key] < 0) {
+        if (!is_numeric($arguments[$key]) || (float)$arguments[$key] < 0) {
             throw new \InvalidArgumentException(sprintf('Argument "%s" must be a number >= 0.', $key));
         }
 
-        return (float) $arguments[$key];
+        return (float)$arguments[$key];
     }
 
     /**
@@ -238,7 +238,7 @@ class CreateProduct implements WriteToolInterface
             if (!is_numeric($categoryId)) {
                 throw new \InvalidArgumentException('Argument "category_ids" must contain only integers.');
             }
-            $ids[] = (int) $categoryId;
+            $ids[] = (int)$categoryId;
         }
 
         foreach ($ids as $id) {
@@ -261,7 +261,7 @@ class CreateProduct implements WriteToolInterface
         try {
             $existing = $this->productRepository->get($sku);
             throw new \RuntimeException(
-                sprintf('Product with SKU "%s" already exists (ID %d).', $sku, (int) $existing->getId())
+                sprintf('Product with SKU "%s" already exists (ID %d).', $sku, (int)$existing->getId())
             );
         } catch (NoSuchEntityException) {
             return;

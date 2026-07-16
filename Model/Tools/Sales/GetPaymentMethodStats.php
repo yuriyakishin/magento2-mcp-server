@@ -118,12 +118,12 @@ class GetPaymentMethodStats implements ToolInterface
         $rowsScanned = 0;
         foreach ($collection as $order) {
             $rowsScanned++;
-            if ((string) $order->getData('state') === Order::STATE_CANCELED) {
+            if ((string)$order->getData('state') === Order::STATE_CANCELED) {
                 continue;
             }
-            $orders[(int) $order->getData('entity_id')] = [
-                'currency' => (string) ($order->getData('order_currency_code') ?: 'unknown'),
-                'grand_total' => (float) $order->getData('grand_total'),
+            $orders[(int)$order->getData('entity_id')] = [
+                'currency' => (string)($order->getData('order_currency_code') ?: 'unknown'),
+                'grand_total' => (float)$order->getData('grand_total'),
             ];
         }
 
@@ -151,11 +151,11 @@ class GetPaymentMethodStats implements ToolInterface
 
         $methods = [];
         foreach ($collection as $payment) {
-            $orderId = (int) $payment->getData('parent_id');
+            $orderId = (int)$payment->getData('parent_id');
             if (!isset($orders[$orderId])) {
                 continue;
             }
-            $method = (string) ($payment->getData('method') ?: 'unknown');
+            $method = (string)($payment->getData('method') ?: 'unknown');
             $currency = $orders[$orderId]['currency'];
             $key = $method . '|' . $currency;
 

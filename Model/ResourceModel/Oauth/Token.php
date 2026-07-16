@@ -44,6 +44,6 @@ class Token extends AbstractDb
 
         $entityId = $connection->fetchOne($select);
 
-        return $entityId !== false ? (int) $entityId : null;
+        return $entityId !== false ? (int)$entityId : null;
     }
 }

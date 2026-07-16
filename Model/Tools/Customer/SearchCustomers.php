@@ -86,7 +86,7 @@ class SearchCustomers implements ToolInterface
         }
         $query = trim($query);
 
-        $limit = (int) ($arguments['limit'] ?? self::DEFAULT_LIMIT);
+        $limit = (int)($arguments['limit'] ?? self::DEFAULT_LIMIT);
         $limit = max(1, min($limit, self::MAX_LIMIT));
 
         $collection = $this->customerCollectionFactory->create();
@@ -101,7 +101,7 @@ class SearchCustomers implements ToolInterface
         $customers = [];
         $customerIds = [];
         foreach ($collection as $customer) {
-            $customerId = (int) $customer->getId();
+            $customerId = (int)$customer->getId();
             $customerIds[] = $customerId;
             $customers[$customerId] = [
                 'customer_id' => $customerId,
@@ -144,13 +144,13 @@ class SearchCustomers implements ToolInterface
 
         $totals = [];
         foreach ($collection as $order) {
-            if ((string) $order->getData('state') === Order::STATE_CANCELED) {
+            if ((string)$order->getData('state') === Order::STATE_CANCELED) {
                 continue;
             }
-            $customerId = (int) $order->getData('customer_id');
+            $customerId = (int)$order->getData('customer_id');
             $totals[$customerId] ??= ['orders' => 0, 'spent' => 0.0];
             $totals[$customerId]['orders']++;
-            $totals[$customerId]['spent'] += (float) $order->getData('base_grand_total');
+            $totals[$customerId]['spent'] += (float)$order->getData('base_grand_total');
         }
 
         return $totals;

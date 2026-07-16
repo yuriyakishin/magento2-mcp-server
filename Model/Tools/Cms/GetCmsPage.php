@@ -74,7 +74,7 @@ class GetCmsPage implements ToolInterface
 
         $store = $this->storeManager->getStore();
         try {
-            $page = $this->getPageByIdentifier->execute($identifier, (int) $store->getId());
+            $page = $this->getPageByIdentifier->execute($identifier, (int)$store->getId());
         } catch (NoSuchEntityException) {
             throw new \RuntimeException(sprintf('CMS page with identifier "%s" does not exist.', $identifier));
         }
@@ -86,7 +86,7 @@ class GetCmsPage implements ToolInterface
 
         return [
             'page' => [
-                'id' => (int) $page->getId(),
+                'id' => (int)$page->getId(),
                 'identifier' => $page->getIdentifier(),
                 'title' => $page->getTitle(),
                 'content_heading' => $page->getContentHeading(),

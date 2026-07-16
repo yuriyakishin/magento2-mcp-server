@@ -94,7 +94,7 @@ class CheckStock implements ContextAwareToolInterface
         foreach ($skus as $sku) {
             try {
                 $product = $this->productRepository->get($sku);
-                $enabled = (int) $product->getStatus() === Status::STATUS_ENABLED;
+                $enabled = (int)$product->getStatus() === Status::STATUS_ENABLED;
 
                 // A customer can't see a disabled product on the storefront, so its stock
                 // is answered exactly like an unknown SKU for anonymous callers.
@@ -107,8 +107,8 @@ class CheckStock implements ContextAwareToolInterface
                 $row = [
                     'sku' => $sku,
                     'found' => true,
-                    'qty' => (float) $stockItem->getQty(),
-                    'is_in_stock' => (bool) $stockItem->getIsInStock(),
+                    'qty' => (float)$stockItem->getQty(),
+                    'is_in_stock' => (bool)$stockItem->getIsInStock(),
                 ];
                 if ($adminView) {
                     $row['status'] = $enabled ? 'enabled' : 'disabled';

@@ -153,12 +153,12 @@ class ListReviews implements ToolInterface
             if (!$this->matchesRatingRange($rating, $ratingMin, $ratingMax)) {
                 continue;
             }
-            $productId = (int) $review->getData('entity_pk_value');
+            $productId = (int)$review->getData('entity_pk_value');
             $productIds[] = $productId;
             $reviews[] = [
-                'review_id' => (int) $review->getData('review_id'),
+                'review_id' => (int)$review->getData('review_id'),
                 'created_at' => $review->getData('created_at'),
-                'status' => array_search((int) $review->getData('status_id'), self::STATUS_MAP, true) ?: 'unknown',
+                'status' => array_search((int)$review->getData('status_id'), self::STATUS_MAP, true) ?: 'unknown',
                 'nickname' => $review->getData('nickname'),
                 'title' => $review->getData('title'),
                 'text' => $review->getData('detail'),
@@ -201,7 +201,7 @@ class ListReviews implements ToolInterface
 
         $products = [];
         foreach ($collection as $product) {
-            $products[(int) $product->getId()] = [
+            $products[(int)$product->getId()] = [
                 'sku' => $product->getSku(),
                 'name' => $product->getName(),
             ];
@@ -225,7 +225,7 @@ class ListReviews implements ToolInterface
         $sum = 0;
         $count = 0;
         foreach ($votes as $vote) {
-            $sum += (int) $vote->getData('value');
+            $sum += (int)$vote->getData('value');
             $count++;
         }
 
@@ -294,12 +294,12 @@ class ListReviews implements ToolInterface
         $range = [];
         foreach (['rating_min', 'rating_max'] as $key) {
             $value = $arguments[$key] ?? null;
-            if ($value !== null && (!is_numeric($value) || (int) $value != $value || $value < 1 || $value > 5)) {
+            if ($value !== null && (!is_numeric($value) || (int)$value != $value || $value < 1 || $value > 5)) {
                 throw new \InvalidArgumentException(
                     sprintf('Argument "%s" must be an integer between 1 and 5.', $key)
                 );
             }
-            $range[] = $value === null ? null : (int) $value;
+            $range[] = $value === null ? null : (int)$value;
         }
         if ($range[0] !== null && $range[1] !== null && $range[0] > $range[1]) {
             throw new \InvalidArgumentException('Argument "rating_min" must not exceed "rating_max".');
@@ -316,10 +316,10 @@ class ListReviews implements ToolInterface
         if (!isset($arguments[$key])) {
             return $default;
         }
-        if (!is_numeric($arguments[$key]) || (int) $arguments[$key] < 1) {
+        if (!is_numeric($arguments[$key]) || (int)$arguments[$key] < 1) {
             throw new \InvalidArgumentException(sprintf('Argument "%s" must be a positive integer.', $key));
         }
 
-        return min((int) $arguments[$key], $max);
+        return min((int)$arguments[$key], $max);
     }
 }

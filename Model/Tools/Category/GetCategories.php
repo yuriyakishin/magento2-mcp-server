@@ -65,8 +65,8 @@ class GetCategories implements ToolInterface
      */
     public function execute(array $arguments): array
     {
-        $includeInactive = (bool) ($arguments['include_inactive'] ?? false);
-        $rootCategoryId = (int) $this->storeManager->getStore()->getRootCategoryId();
+        $includeInactive = (bool)($arguments['include_inactive'] ?? false);
+        $rootCategoryId = (int)$this->storeManager->getStore()->getRootCategoryId();
 
         $collection = $this->categoryCollectionFactory->create();
         $collection->addAttributeToSelect(['name', 'url_key', 'is_active']);
@@ -83,12 +83,12 @@ class GetCategories implements ToolInterface
         $categories = [];
         foreach ($collection as $category) {
             $categories[] = [
-                'id' => (int) $category->getId(),
-                'parent_id' => (int) $category->getParentId(),
+                'id' => (int)$category->getId(),
+                'parent_id' => (int)$category->getParentId(),
                 'name' => $category->getName(),
-                'level' => (int) $category->getLevel(),
+                'level' => (int)$category->getLevel(),
                 'url_key' => $category->getData('url_key'),
-                'is_active' => (bool) $category->getIsActive(),
+                'is_active' => (bool)$category->getIsActive(),
             ];
         }
 

@@ -37,7 +37,7 @@ class LoginRateLimiter
     public function registerFailure(string $ipAddress): void
     {
         $attempts = $this->getAttempts($ipAddress) + 1;
-        $this->cache->save((string) $attempts, $this->cacheId($ipAddress), [self::CACHE_TAG], self::WINDOW_SECONDS);
+        $this->cache->save((string)$attempts, $this->cacheId($ipAddress), [self::CACHE_TAG], self::WINDOW_SECONDS);
     }
 
     /**
@@ -55,7 +55,7 @@ class LoginRateLimiter
     {
         $cached = $this->cache->load($this->cacheId($ipAddress));
 
-        return $cached !== false ? (int) $cached : 0;
+        return $cached !== false ? (int)$cached : 0;
     }
 
     /**

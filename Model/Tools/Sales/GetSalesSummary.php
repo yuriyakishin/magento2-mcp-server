@@ -148,16 +148,16 @@ class GetSalesSummary implements ToolInterface
         foreach ($collection as $order) {
             $ordersTotal++;
 
-            $status = (string) ($order->getData('status') ?: 'unknown');
+            $status = (string)($order->getData('status') ?: 'unknown');
             $byStatus[$status] = ($byStatus[$status] ?? 0) + 1;
 
-            if ((string) $order->getData('state') === Order::STATE_CANCELED) {
+            if ((string)$order->getData('state') === Order::STATE_CANCELED) {
                 continue;
             }
-            $currency = (string) ($order->getData('order_currency_code') ?: 'unknown');
+            $currency = (string)($order->getData('order_currency_code') ?: 'unknown');
             $byCurrency[$currency] ??= ['orders' => 0, 'revenue' => 0.0];
             $byCurrency[$currency]['orders']++;
-            $byCurrency[$currency]['revenue'] += (float) $order->getData('grand_total');
+            $byCurrency[$currency]['revenue'] += (float)$order->getData('grand_total');
         }
 
         $currencyRows = [];
@@ -199,18 +199,18 @@ class GetSalesSummary implements ToolInterface
 
         $products = [];
         foreach ($collection as $item) {
-            $sku = (string) $item->getData('sku');
+            $sku = (string)$item->getData('sku');
             if ($sku === '') {
                 continue;
             }
             $products[$sku] ??= [
                 'sku' => $sku,
-                'name' => (string) $item->getData('name'),
+                'name' => (string)$item->getData('name'),
                 'qty' => 0.0,
                 'revenue' => 0.0,
             ];
-            $products[$sku]['qty'] += (float) $item->getData('qty_ordered');
-            $products[$sku]['revenue'] += (float) $item->getData('row_total');
+            $products[$sku]['qty'] += (float)$item->getData('qty_ordered');
+            $products[$sku]['revenue'] += (float)$item->getData('row_total');
         }
 
         usort($products, static fn (array $a, array $b) => $b['qty'] <=> $a['qty']);
@@ -255,10 +255,10 @@ class GetSalesSummary implements ToolInterface
         if (!isset($arguments['top_products'])) {
             return self::DEFAULT_TOP_PRODUCTS;
         }
-        if (!is_numeric($arguments['top_products']) || (int) $arguments['top_products'] < 0) {
+        if (!is_numeric($arguments['top_products']) || (int)$arguments['top_products'] < 0) {
             throw new \InvalidArgumentException('Argument "top_products" must be an integer >= 0.');
         }
 
-        return min((int) $arguments['top_products'], self::MAX_TOP_PRODUCTS);
+        return min((int)$arguments['top_products'], self::MAX_TOP_PRODUCTS);
     }
 }

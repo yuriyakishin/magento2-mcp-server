@@ -61,8 +61,8 @@ class RestockAdvisor implements PromptInterface
         if (!is_string($horizon) && !is_int($horizon)) {
             throw new \InvalidArgumentException('Argument "horizon_days" must be a number of days, 7-90.');
         }
-        $horizon = trim((string) $horizon);
-        if (!ctype_digit($horizon) || (int) $horizon < 7 || (int) $horizon > 90) {
+        $horizon = trim((string)$horizon);
+        if (!ctype_digit($horizon) || (int)$horizon < 7 || (int)$horizon > 90) {
             throw new \InvalidArgumentException('Argument "horizon_days" must be a number of days, 7-90.');
         }
 

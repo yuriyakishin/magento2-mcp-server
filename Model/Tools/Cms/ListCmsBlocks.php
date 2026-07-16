@@ -91,17 +91,17 @@ class ListCmsBlocks implements ToolInterface
         $blocks = [];
         foreach ($collection as $block) {
             $blocks[] = [
-                'id' => (int) $block->getId(),
-                'identifier' => (string) $block->getData('identifier'),
-                'title' => (string) $block->getData('title'),
-                'is_active' => (bool) $block->getData('is_active'),
-                'created_at' => (string) $block->getData('creation_time'),
-                'updated_at' => (string) $block->getData('update_time'),
+                'id' => (int)$block->getId(),
+                'identifier' => (string)$block->getData('identifier'),
+                'title' => (string)$block->getData('title'),
+                'is_active' => (bool)$block->getData('is_active'),
+                'created_at' => (string)$block->getData('creation_time'),
+                'updated_at' => (string)$block->getData('update_time'),
             ];
         }
 
         return [
-            'total' => (int) $collection->getSize(),
+            'total' => (int)$collection->getSize(),
             'blocks' => $blocks,
         ];
     }
@@ -129,10 +129,10 @@ class ListCmsBlocks implements ToolInterface
         if (!isset($arguments['limit'])) {
             return self::DEFAULT_LIMIT;
         }
-        if (!is_numeric($arguments['limit']) || (int) $arguments['limit'] < 1) {
+        if (!is_numeric($arguments['limit']) || (int)$arguments['limit'] < 1) {
             throw new \InvalidArgumentException('Argument "limit" must be an integer >= 1.');
         }
 
-        return min((int) $arguments['limit'], self::MAX_LIMIT);
+        return min((int)$arguments['limit'], self::MAX_LIMIT);
     }
 }

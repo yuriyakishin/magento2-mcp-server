@@ -95,7 +95,7 @@ class GetLowStockProducts implements ToolInterface
         $limit = $this->limitArgument($arguments);
 
         $criteria = $this->criteriaFactory->create();
-        $criteria->setManagedFilter((bool) $this->stockConfiguration->getManageStock());
+        $criteria->setManagedFilter((bool)$this->stockConfiguration->getManageStock());
         $criteria->setQtyFilter('<', $threshold);
         $criteria->addOrder('qty', 'ASC');
         $criteria->setLimit(0, self::STOCK_SCAN_LIMIT);
@@ -106,21 +106,21 @@ class GetLowStockProducts implements ToolInterface
         }
 
         $productsById = $this->loadProducts(
-            array_map(static fn ($item) => (int) $item->getProductId(), $stockItems)
+            array_map(static fn ($item) => (int)$item->getProductId(), $stockItems)
         );
 
         $products = [];
         foreach ($stockItems as $stockItem) {
-            $product = $productsById[(int) $stockItem->getProductId()] ?? null;
+            $product = $productsById[(int)$stockItem->getProductId()] ?? null;
             if ($product === null) {
                 continue;
             }
             $products[] = [
                 'sku' => $product->getSku(),
                 'name' => $product->getName(),
-                'qty' => (float) $stockItem->getQty(),
-                'is_in_stock' => (bool) $stockItem->getIsInStock(),
-                'status' => (int) $product->getStatus() === Status::STATUS_ENABLED ? 'enabled' : 'disabled',
+                'qty' => (float)$stockItem->getQty(),
+                'is_in_stock' => (bool)$stockItem->getIsInStock(),
+                'status' => (int)$product->getStatus() === Status::STATUS_ENABLED ? 'enabled' : 'disabled',
             ];
             if (count($products) === $limit) {
                 break;
@@ -152,7 +152,7 @@ class GetLowStockProducts implements ToolInterface
 
         $productsById = [];
         foreach ($collection as $product) {
-            $productsById[(int) $product->getId()] = $product;
+            $productsById[(int)$product->getId()] = $product;
         }
 
         return $productsById;
@@ -166,11 +166,11 @@ class GetLowStockProducts implements ToolInterface
         if (!isset($arguments['threshold'])) {
             return self::DEFAULT_THRESHOLD;
         }
-        if (!is_numeric($arguments['threshold']) || (float) $arguments['threshold'] < 0) {
+        if (!is_numeric($arguments['threshold']) || (float)$arguments['threshold'] < 0) {
             throw new \InvalidArgumentException('Argument "threshold" must be a number >= 0.');
         }
 
-        return (float) $arguments['threshold'];
+        return (float)$arguments['threshold'];
     }
 
     /**
@@ -181,10 +181,10 @@ class GetLowStockProducts implements ToolInterface
         if (!isset($arguments['limit'])) {
             return self::DEFAULT_LIMIT;
         }
-        if (!is_numeric($arguments['limit']) || (int) $arguments['limit'] < 1) {
+        if (!is_numeric($arguments['limit']) || (int)$arguments['limit'] < 1) {
             throw new \InvalidArgumentException('Argument "limit" must be a positive integer.');
         }
 
-        return min((int) $arguments['limit'], self::MAX_LIMIT);
+        return min((int)$arguments['limit'], self::MAX_LIMIT);
     }
 }

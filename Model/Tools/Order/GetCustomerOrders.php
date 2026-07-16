@@ -77,7 +77,7 @@ class GetCustomerOrders implements ToolInterface
             );
         }
 
-        $limit = (int) ($arguments['limit'] ?? self::DEFAULT_LIMIT);
+        $limit = (int)($arguments['limit'] ?? self::DEFAULT_LIMIT);
         $limit = max(1, min($limit, self::MAX_LIMIT));
 
         $searchCriteria = $this->searchCriteriaBuilder

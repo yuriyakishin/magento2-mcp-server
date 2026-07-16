@@ -136,20 +136,20 @@ class ListOrders implements ToolInterface
                 'order_number' => $order->getIncrementId(),
                 'created_at' => $order->getCreatedAt(),
                 'status' => $order->getStatus(),
-                'grand_total' => (float) $order->getGrandTotal(),
+                'grand_total' => (float)$order->getGrandTotal(),
                 'currency' => $order->getOrderCurrencyCode(),
                 'customer_name' => trim(
                     ($order->getCustomerFirstname() ?? '') . ' ' . ($order->getCustomerLastname() ?? '')
                 ) ?: null,
                 'customer_email' => $order->getCustomerEmail(),
-                'items_qty' => (float) $order->getTotalQtyOrdered(),
+                'items_qty' => (float)$order->getTotalQtyOrdered(),
             ];
         }
 
         return [
             'orders' => $orders,
             'count' => count($orders),
-            'total' => (int) $searchResult->getTotalCount(),
+            'total' => (int)$searchResult->getTotalCount(),
             'page' => $page,
         ];
     }
@@ -199,10 +199,10 @@ class ListOrders implements ToolInterface
         if (!isset($arguments[$key])) {
             return $default;
         }
-        if (!is_numeric($arguments[$key]) || (int) $arguments[$key] < 1) {
+        if (!is_numeric($arguments[$key]) || (int)$arguments[$key] < 1) {
             throw new \InvalidArgumentException(sprintf('Argument "%s" must be a positive integer.', $key));
         }
 
-        return min((int) $arguments[$key], $max);
+        return min((int)$arguments[$key], $max);
     }
 }

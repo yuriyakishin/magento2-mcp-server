@@ -91,7 +91,7 @@ class SearchProducts implements ContextAwareToolInterface
             throw new \InvalidArgumentException('Argument "query" is required and must be a non-empty string.');
         }
 
-        $limit = (int) ($arguments['limit'] ?? self::DEFAULT_LIMIT);
+        $limit = (int)($arguments['limit'] ?? self::DEFAULT_LIMIT);
         $limit = max(1, min($limit, self::MAX_LIMIT));
 
         $adminView = $adminContext !== null && $adminContext->hasAclResource('Magento_Catalog::products');
@@ -115,7 +115,7 @@ class SearchProducts implements ContextAwareToolInterface
                 'price' => $product->getPrice(),
             ];
             if ($adminView) {
-                $row['status'] = (int) $product->getStatus() === Status::STATUS_ENABLED ? 'enabled' : 'disabled';
+                $row['status'] = (int)$product->getStatus() === Status::STATUS_ENABLED ? 'enabled' : 'disabled';
             }
             $products[] = $row;
         }

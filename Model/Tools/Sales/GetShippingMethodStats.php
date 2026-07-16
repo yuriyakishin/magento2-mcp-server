@@ -94,24 +94,24 @@ class GetShippingMethodStats implements ToolInterface
         $rowsScanned = 0;
         foreach ($collection as $order) {
             $rowsScanned++;
-            if ((string) $order->getData('state') === Order::STATE_CANCELED) {
+            if ((string)$order->getData('state') === Order::STATE_CANCELED) {
                 continue;
             }
-            $method = (string) ($order->getData('shipping_method') ?: '(no shipping)');
-            $currency = (string) ($order->getData('order_currency_code') ?: 'unknown');
+            $method = (string)($order->getData('shipping_method') ?: '(no shipping)');
+            $currency = (string)($order->getData('order_currency_code') ?: 'unknown');
             $key = $method . '|' . $currency;
 
             $methods[$key] ??= [
                 'method' => $method,
-                'description' => (string) ($order->getData('shipping_description') ?: ''),
+                'description' => (string)($order->getData('shipping_description') ?: ''),
                 'currency' => $currency,
                 'orders' => 0,
                 'revenue' => 0.0,
                 'shipping_total' => 0.0,
             ];
             $methods[$key]['orders']++;
-            $methods[$key]['revenue'] += (float) $order->getData('grand_total');
-            $methods[$key]['shipping_total'] += (float) $order->getData('shipping_amount');
+            $methods[$key]['revenue'] += (float)$order->getData('grand_total');
+            $methods[$key]['shipping_total'] += (float)$order->getData('shipping_amount');
         }
 
         $rows = array_map(

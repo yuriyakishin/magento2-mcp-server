@@ -126,7 +126,7 @@ class UpdateProductStockStatus implements WriteToolInterface
 
             $updated[] = [
                 'sku' => $sku,
-                'status' => (int) $product->getStatus() === Status::STATUS_ENABLED ? 'enabled' : 'disabled',
+                'status' => (int)$product->getStatus() === Status::STATUS_ENABLED ? 'enabled' : 'disabled',
                 'qty' => $qty,
             ];
         }
@@ -191,10 +191,10 @@ class UpdateProductStockStatus implements WriteToolInterface
         if (!isset($arguments['qty'])) {
             return null;
         }
-        if (!is_numeric($arguments['qty']) || (float) $arguments['qty'] < 0) {
+        if (!is_numeric($arguments['qty']) || (float)$arguments['qty'] < 0) {
             throw new \InvalidArgumentException('Argument "qty" must be a number >= 0.');
         }
 
-        return (float) $arguments['qty'];
+        return (float)$arguments['qty'];
     }
 }

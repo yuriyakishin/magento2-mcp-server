@@ -64,7 +64,7 @@ class ListReviewsTest extends TestCase
         $review = $this->reviewMock([
             'review_id' => '7',
             'created_at' => '2026-07-05 10:00:00',
-            'status_id' => (string) Review::STATUS_PENDING,
+            'status_id' => (string)Review::STATUS_PENDING,
             'nickname' => 'Yuriy',
             'title' => 'Great',
             'detail' => 'Very comfy sofa',
@@ -121,7 +121,7 @@ class ListReviewsTest extends TestCase
         $negative = $this->reviewMock([
             'review_id' => '1',
             'created_at' => '2026-07-05 10:00:00',
-            'status_id' => (string) Review::STATUS_APPROVED,
+            'status_id' => (string)Review::STATUS_APPROVED,
             'nickname' => 'Anna',
             'title' => 'Bad',
             'detail' => 'Broke in a week',
@@ -130,7 +130,7 @@ class ListReviewsTest extends TestCase
         $positive = $this->reviewMock([
             'review_id' => '2',
             'created_at' => '2026-07-04 10:00:00',
-            'status_id' => (string) Review::STATUS_APPROVED,
+            'status_id' => (string)Review::STATUS_APPROVED,
             'nickname' => 'Yuriy',
             'title' => 'Great',
             'detail' => 'Love it',
@@ -139,7 +139,7 @@ class ListReviewsTest extends TestCase
         $unrated = $this->reviewMock([
             'review_id' => '3',
             'created_at' => '2026-07-03 10:00:00',
-            'status_id' => (string) Review::STATUS_APPROVED,
+            'status_id' => (string)Review::STATUS_APPROVED,
             'nickname' => 'Olha',
             'title' => 'Meh',
             'detail' => 'No stars given',
@@ -222,7 +222,7 @@ class ListReviewsTest extends TestCase
             $votes = [];
             foreach ($voteValues as $value) {
                 $vote = $this->createMock(Vote::class);
-                $vote->method('getData')->willReturnMap([['value', null, (string) $value]]);
+                $vote->method('getData')->willReturnMap([['value', null, (string)$value]]);
                 $votes[] = $vote;
             }
         }

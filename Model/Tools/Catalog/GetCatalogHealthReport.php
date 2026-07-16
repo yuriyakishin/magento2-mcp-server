@@ -104,9 +104,9 @@ class GetCatalogHealthReport implements ToolInterface
         $scanned = 0;
         foreach ($collection as $product) {
             $scanned++;
-            $sku = (string) $product->getSku();
+            $sku = (string)$product->getSku();
 
-            $image = (string) $product->getData('image');
+            $image = (string)$product->getData('image');
             if ($image === '' || $image === 'no_selection') {
                 $this->record($checks['missing_image'], $sku, $sampleSize);
             }
@@ -119,7 +119,7 @@ class GetCatalogHealthReport implements ToolInterface
                 $this->record($checks['missing_meta_description'], $sku, $sampleSize);
             }
             $price = $product->getData('price');
-            if ($price === null || (float) $price <= 0.0) {
+            if ($price === null || (float)$price <= 0.0) {
                 $this->record($checks['zero_price'], $sku, $sampleSize);
             }
         }
@@ -154,7 +154,7 @@ class GetCatalogHealthReport implements ToolInterface
      */
     private function isBlank(mixed $value): bool
     {
-        return $value === null || trim((string) $value) === '';
+        return $value === null || trim((string)$value) === '';
     }
 
     /**
@@ -180,10 +180,10 @@ class GetCatalogHealthReport implements ToolInterface
         if (!isset($arguments['sample_size'])) {
             return self::DEFAULT_SAMPLE_SIZE;
         }
-        if (!is_numeric($arguments['sample_size']) || (int) $arguments['sample_size'] < 1) {
+        if (!is_numeric($arguments['sample_size']) || (int)$arguments['sample_size'] < 1) {
             throw new \InvalidArgumentException('Argument "sample_size" must be an integer >= 1.');
         }
 
-        return min((int) $arguments['sample_size'], self::MAX_SAMPLE_SIZE);
+        return min((int)$arguments['sample_size'], self::MAX_SAMPLE_SIZE);
     }
 }

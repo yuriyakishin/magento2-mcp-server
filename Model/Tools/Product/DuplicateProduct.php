@@ -133,11 +133,11 @@ class DuplicateProduct implements WriteToolInterface
         $product->setSku($newSku);
         $product->setName($name ?? $source->getName() . ' (copy)');
         $product->setTypeId(Type::TYPE_SIMPLE);
-        $product->setAttributeSetId((int) $source->getAttributeSetId());
-        $product->setPrice($price ?? (float) $source->getPrice());
+        $product->setAttributeSetId((int)$source->getAttributeSetId());
+        $product->setPrice($price ?? (float)$source->getPrice());
         $product->setStatus(Status::STATUS_DISABLED);
-        $product->setVisibility((int) $source->getVisibility());
-        $product->setWebsiteIds(array_map('intval', (array) $source->getWebsiteIds()));
+        $product->setVisibility((int)$source->getVisibility());
+        $product->setWebsiteIds(array_map('intval', (array)$source->getWebsiteIds()));
         $product->setStockData([
             'qty' => 0,
             'is_in_stock' => 0,
@@ -151,17 +151,17 @@ class DuplicateProduct implements WriteToolInterface
 
         $saved = $this->productRepository->save($product);
 
-        $categoryIds = array_map('intval', (array) $source->getCategoryIds());
+        $categoryIds = array_map('intval', (array)$source->getCategoryIds());
         if ($categoryIds !== []) {
             $this->categoryLinkManagement->assignProductToCategories($newSku, $categoryIds);
         }
 
         return [
             'product' => [
-                'id' => (int) $saved->getId(),
+                'id' => (int)$saved->getId(),
                 'sku' => $saved->getSku(),
                 'name' => $saved->getName(),
-                'price' => (float) $saved->getPrice(),
+                'price' => (float)$saved->getPrice(),
                 'status' => 'disabled',
                 'source_sku' => $sourceSku,
                 'category_ids' => $categoryIds,
@@ -213,11 +213,11 @@ class DuplicateProduct implements WriteToolInterface
         if (!isset($arguments['price'])) {
             return null;
         }
-        if (!is_numeric($arguments['price']) || (float) $arguments['price'] <= 0) {
+        if (!is_numeric($arguments['price']) || (float)$arguments['price'] <= 0) {
             throw new \InvalidArgumentException('Argument "price" must be a number > 0.');
         }
 
-        return (float) $arguments['price'];
+        return (float)$arguments['price'];
     }
 
     /**
@@ -229,7 +229,7 @@ class DuplicateProduct implements WriteToolInterface
         try {
             $existing = $this->productRepository->get($sku);
             throw new \RuntimeException(
-                sprintf('Product with SKU "%s" already exists (ID %d).', $sku, (int) $existing->getId())
+                sprintf('Product with SKU "%s" already exists (ID %d).', $sku, (int)$existing->getId())
             );
         } catch (NoSuchEntityException) {
             return;

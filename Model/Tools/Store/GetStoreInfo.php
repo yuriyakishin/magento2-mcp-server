@@ -79,8 +79,8 @@ class GetStoreInfo implements ToolInterface
                 'base_currency' => $store->getBaseCurrencyCode(),
                 'display_currency' => $store->getDefaultCurrencyCode(),
                 'allowed_currencies' => array_values($store->getAvailableCurrencyCodes()),
-                'locale' => (string) $this->configValue('general/locale/code'),
-                'timezone' => (string) $this->configValue('general/locale/timezone'),
+                'locale' => (string)$this->configValue('general/locale/code'),
+                'timezone' => (string)$this->configValue('general/locale/timezone'),
             ],
             'contact' => [
                 'store_name' => $this->configValue('general/store_information/name'),
@@ -116,8 +116,8 @@ class GetStoreInfo implements ToolInterface
                 continue;
             }
             $methods[] = [
-                'code' => (string) $code,
-                'title' => (string) ($data['title'] ?? $code),
+                'code' => (string)$code,
+                'title' => (string)($data['title'] ?? $code),
             ];
         }
 

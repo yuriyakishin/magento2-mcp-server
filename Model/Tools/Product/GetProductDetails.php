@@ -108,7 +108,7 @@ class GetProductDetails implements ContextAwareToolInterface
 
         // A customer can't open a disabled product on the storefront, so anonymous callers
         // get the exact same answer as for an unknown SKU — existence must not be probeable.
-        if (!$adminView && (int) $product->getStatus() !== Status::STATUS_ENABLED) {
+        if (!$adminView && (int)$product->getStatus() !== Status::STATUS_ENABLED) {
             throw new \RuntimeException(sprintf('Product with SKU "%s" does not exist.', trim($sku)));
         }
 
@@ -117,8 +117,8 @@ class GetProductDetails implements ContextAwareToolInterface
                 'sku' => $product->getSku(),
                 'name' => $product->getName(),
                 'type' => $product->getTypeId(),
-                'status' => (int) $product->getStatus() === Status::STATUS_ENABLED ? 'enabled' : 'disabled',
-                'visibility' => self::VISIBILITY_LABELS[(int) $product->getVisibility()] ?? 'unknown',
+                'status' => (int)$product->getStatus() === Status::STATUS_ENABLED ? 'enabled' : 'disabled',
+                'visibility' => self::VISIBILITY_LABELS[(int)$product->getVisibility()] ?? 'unknown',
                 'price' => $product->getPrice(),
                 'special_price' => $product->getData('special_price'),
                 'description' => $product->getData('description'),

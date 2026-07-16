@@ -122,7 +122,7 @@ class UpdateProduct implements WriteToolInterface
         }
 
         if (isset($fields['special_price'])) {
-            $newPrice = $fields['price'] ?? (float) $product->getPrice();
+            $newPrice = $fields['price'] ?? (float)$product->getPrice();
             if ($fields['special_price'] >= $newPrice) {
                 throw new \InvalidArgumentException(sprintf(
                     'Argument "special_price" (%s) must be below the regular price (%s).',
@@ -159,11 +159,11 @@ class UpdateProduct implements WriteToolInterface
     {
         return match ($field) {
             'name' => $product->getName(),
-            'price' => $product->getPrice() === null ? null : (float) $product->getPrice(),
+            'price' => $product->getPrice() === null ? null : (float)$product->getPrice(),
             'special_price', 'remove_special_price' => $product->getData('special_price') === null
                 ? null
-                : (float) $product->getData('special_price'),
-            'status' => (int) $product->getStatus() === Status::STATUS_ENABLED ? 'enabled' : 'disabled',
+                : (float)$product->getData('special_price'),
+            'status' => (int)$product->getStatus() === Status::STATUS_ENABLED ? 'enabled' : 'disabled',
             default => $product->getData($field),
         };
     }
@@ -224,10 +224,10 @@ class UpdateProduct implements WriteToolInterface
             if (!isset($arguments[$key])) {
                 continue;
             }
-            if (!is_numeric($arguments[$key]) || (float) $arguments[$key] <= 0) {
+            if (!is_numeric($arguments[$key]) || (float)$arguments[$key] <= 0) {
                 throw new \InvalidArgumentException(sprintf('Argument "%s" must be a number > 0.', $key));
             }
-            $fields[$key] = (float) $arguments[$key];
+            $fields[$key] = (float)$arguments[$key];
         }
 
         if (isset($arguments['status'])) {

@@ -92,8 +92,8 @@ class CreateCategory implements WriteToolInterface
         }
         $name = trim($name);
 
-        $parentId = (int) ($arguments['parent_id'] ?? $this->storeManager->getStore()->getRootCategoryId());
-        $isActive = (bool) ($arguments['is_active'] ?? true);
+        $parentId = (int)($arguments['parent_id'] ?? $this->storeManager->getStore()->getRootCategoryId());
+        $isActive = (bool)($arguments['is_active'] ?? true);
 
         try {
             $this->categoryRepository->get($parentId);
@@ -119,11 +119,11 @@ class CreateCategory implements WriteToolInterface
 
         return [
             'category' => [
-                'id' => (int) $saved->getId(),
+                'id' => (int)$saved->getId(),
                 'name' => $saved->getName(),
-                'parent_id' => (int) $saved->getParentId(),
-                'is_active' => (bool) $saved->getIsActive(),
-                'path' => (string) $saved->getPath(),
+                'parent_id' => (int)$saved->getParentId(),
+                'is_active' => (bool)$saved->getIsActive(),
+                'path' => (string)$saved->getPath(),
             ],
         ];
     }
@@ -144,7 +144,7 @@ class CreateCategory implements WriteToolInterface
                 'Category "%s" already exists under parent %d (ID %d).',
                 $name,
                 $parentId,
-                (int) $collection->getFirstItem()->getId()
+                (int)$collection->getFirstItem()->getId()
             ));
         }
     }

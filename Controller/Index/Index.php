@@ -92,7 +92,7 @@ class Index implements HttpPostActionInterface, HttpGetActionInterface, CsrfAwar
         // a reverse proxy, CDN or tunnel REMOTE_ADDR is the proxy's address for every
         // external request, which would put all visitors into one shared bucket.
         if ($adminContext === null) {
-            $ipAddress = (string) $this->request->getClientIp();
+            $ipAddress = (string)$this->request->getClientIp();
             if (!$this->anonymousRateLimiter->registerAndCheck($ipAddress)) {
                 $this->logger->warning(sprintf('Anonymous rate limit exceeded for IP %s', $ipAddress));
 
@@ -100,7 +100,7 @@ class Index implements HttpPostActionInterface, HttpGetActionInterface, CsrfAwar
             }
         }
 
-        $rawContent = (string) $this->request->getContent();
+        $rawContent = (string)$this->request->getContent();
         $this->logFullBody('Full request body', $rawContent);
 
         $decoded = json_decode($rawContent, true);
@@ -291,7 +291,7 @@ class Index implements HttpPostActionInterface, HttpGetActionInterface, CsrfAwar
                     . 'Retry later or authenticate to lift the limit.',
             ],
         ], self::HTTP_TOO_MANY_REQUESTS);
-        $result->setHeader('Retry-After', (string) $this->anonymousRateLimiter->retryAfterSeconds());
+        $result->setHeader('Retry-After', (string)$this->anonymousRateLimiter->retryAfterSeconds());
 
         return $result;
     }

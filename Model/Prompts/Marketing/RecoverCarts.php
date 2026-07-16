@@ -58,8 +58,8 @@ class RecoverCarts implements PromptInterface
         if (!is_string($days) && !is_int($days)) {
             throw new \InvalidArgumentException('Argument "days" must be a number of days, 1-30.');
         }
-        $days = trim((string) $days);
-        if (!ctype_digit($days) || (int) $days < 1 || (int) $days > 30) {
+        $days = trim((string)$days);
+        if (!ctype_digit($days) || (int)$days < 1 || (int)$days > 30) {
             throw new \InvalidArgumentException('Argument "days" must be a number of days, 1-30.');
         }
 

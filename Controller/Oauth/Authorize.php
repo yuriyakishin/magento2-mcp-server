@@ -114,17 +114,17 @@ class Authorize implements HttpGetActionInterface, HttpPostActionInterface, Csrf
      */
     private function resolveAuthorizeParams(): array
     {
-        $clientId = (string) $this->request->getParam('client_id', '');
-        $redirectUri = (string) $this->request->getParam('redirect_uri', '');
-        $codeChallenge = (string) $this->request->getParam('code_challenge', '');
-        $codeChallengeMethod = (string) $this->request->getParam('code_challenge_method', '');
-        $state = (string) $this->request->getParam('state', '');
+        $clientId = (string)$this->request->getParam('client_id', '');
+        $redirectUri = (string)$this->request->getParam('redirect_uri', '');
+        $codeChallenge = (string)$this->request->getParam('code_challenge', '');
+        $codeChallengeMethod = (string)$this->request->getParam('code_challenge_method', '');
+        $state = (string)$this->request->getParam('state', '');
 
         // response_type belongs to the initial GET authorization request, not the login
         // form submission, so it isn't threaded through as a hidden field and is only
         // validated once, here, on the GET.
         if (!$this->request->isPost()) {
-            $responseType = (string) $this->request->getParam('response_type', '');
+            $responseType = (string)$this->request->getParam('response_type', '');
             if ($responseType !== 'code') {
                 throw new \RuntimeException('Unsupported response_type; only "code" is supported.');
             }
@@ -146,7 +146,7 @@ class Authorize implements HttpGetActionInterface, HttpPostActionInterface, Csrf
             throw new \RuntimeException('Unknown client_id.');
         }
 
-        $allowedRedirectUris = array_filter(array_map('trim', explode("\n", (string) $client->getRedirectUris())));
+        $allowedRedirectUris = array_filter(array_map('trim', explode("\n", (string)$client->getRedirectUris())));
         if (!in_array($redirectUri, $allowedRedirectUris, true)) {
             throw new \RuntimeException('redirect_uri does not match any URI registered for this client.');
         }
@@ -170,14 +170,14 @@ class Authorize implements HttpGetActionInterface, HttpPostActionInterface, Csrf
      */
     private function handleLogin(array $params): ResultInterface
     {
-        $ipAddress = (string) $this->request->getClientIp();
+        $ipAddress = (string)$this->request->getClientIp();
 
         if ($this->rateLimiter->isBlocked($ipAddress)) {
             return $this->htmlResult('Too many login attempts. Please try again later.', 429);
         }
 
-        $username = (string) $this->request->getParam('username', '');
-        $password = (string) $this->request->getParam('password', '');
+        $username = (string)$this->request->getParam('username', '');
+        $password = (string)$this->request->getParam('password', '');
 
         try {
             $this->backendAuth->login($username, $password);
@@ -196,7 +196,7 @@ class Authorize implements HttpGetActionInterface, HttpPostActionInterface, Csrf
         }
 
         $this->rateLimiter->reset($ipAddress);
-        $adminUserId = (int) $adminUser->getId();
+        $adminUserId = (int)$adminUser->getId();
 
         switch ($this->twoFactorService->check($adminUserId)) {
             case TwoFactorService::RESULT_REQUIRED:
@@ -241,13 +241,13 @@ class Authorize implements HttpGetActionInterface, HttpPostActionInterface, Csrf
      */
     private function handleTwoFactor(array $params): ResultInterface
     {
-        $ipAddress = (string) $this->request->getClientIp();
+        $ipAddress = (string)$this->request->getClientIp();
 
         if ($this->rateLimiter->isBlocked($ipAddress)) {
             return $this->htmlResult('Too many login attempts. Please try again later.', 429);
         }
 
-        $challengeToken = (string) $this->request->getParam('tfa_challenge', '');
+        $challengeToken = (string)$this->request->getParam('tfa_challenge', '');
         $adminUserId = $this->tfaChallenge->getAdminUserId($challengeToken);
         if ($adminUserId === null) {
             return $this->renderLoginForm(
@@ -256,7 +256,7 @@ class Authorize implements HttpGetActionInterface, HttpPostActionInterface, Csrf
             );
         }
 
-        $tfaCode = trim((string) $this->request->getParam('tfa_code', ''));
+        $tfaCode = trim((string)$this->request->getParam('tfa_code', ''));
         if (!$this->twoFactorService->verifyCode($adminUserId, $tfaCode)) {
             $this->tfaChallenge->registerFailure($challengeToken);
             $this->rateLimiter->registerFailure($ipAddress);

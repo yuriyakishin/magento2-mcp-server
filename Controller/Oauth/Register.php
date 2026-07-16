@@ -54,7 +54,7 @@ class Register implements HttpPostActionInterface, CsrfAwareActionInterface
      */
     public function execute(): ResultInterface
     {
-        $decoded = json_decode((string) $this->request->getContent(), true);
+        $decoded = json_decode((string)$this->request->getContent(), true);
 
         if (!is_array($decoded)) {
             return $this->registrationError('invalid_client_metadata', 'Request body must be a JSON object.');

@@ -138,10 +138,10 @@ class ModerateReviews implements WriteToolInterface
 
         $clean = [];
         foreach ($reviewIds as $reviewId) {
-            if (!is_numeric($reviewId) || (int) $reviewId != $reviewId || (int) $reviewId < 1) {
+            if (!is_numeric($reviewId) || (int)$reviewId != $reviewId || (int)$reviewId < 1) {
                 throw new \InvalidArgumentException('Argument "review_ids" must contain only positive integers.');
             }
-            $clean[] = (int) $reviewId;
+            $clean[] = (int)$reviewId;
         }
         $clean = array_values(array_unique($clean));
 

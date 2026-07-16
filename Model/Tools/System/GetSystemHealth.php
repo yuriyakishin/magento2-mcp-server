@@ -96,13 +96,13 @@ class GetSystemHealth implements ToolInterface
         $items = [];
         $invalidCount = 0;
         foreach ($this->indexerCollectionFactory->create()->getItems() as $indexer) {
-            $status = (string) $indexer->getStatus();
+            $status = (string)$indexer->getStatus();
             if ($status !== 'valid') {
                 $invalidCount++;
             }
             $items[] = [
-                'id' => (string) $indexer->getId(),
-                'title' => (string) $indexer->getTitle(),
+                'id' => (string)$indexer->getId(),
+                'title' => (string)$indexer->getTitle(),
                 'status' => $status,
             ];
         }
@@ -141,24 +141,24 @@ class GetSystemHealth implements ToolInterface
         $errors = [];
         $stuck = [];
         foreach ($collection as $schedule) {
-            $status = (string) $schedule->getData('status');
+            $status = (string)$schedule->getData('status');
             $byStatus[$status] = ($byStatus[$status] ?? 0) + 1;
 
             if ($status === Schedule::STATUS_ERROR && count($errors) < self::MAX_ERROR_SAMPLES) {
                 $errors[] = [
-                    'job_code' => (string) $schedule->getData('job_code'),
-                    'executed_at' => (string) $schedule->getData('executed_at'),
+                    'job_code' => (string)$schedule->getData('job_code'),
+                    'executed_at' => (string)$schedule->getData('executed_at'),
                     'message' => mb_substr(
-                        (string) $schedule->getData('messages'),
+                        (string)$schedule->getData('messages'),
                         0,
                         self::ERROR_MESSAGE_MAX_LENGTH
                     ),
                 ];
             }
-            $executedAt = (string) $schedule->getData('executed_at');
+            $executedAt = (string)$schedule->getData('executed_at');
             if ($status === Schedule::STATUS_RUNNING && $executedAt !== '' && $executedAt < $stuckBefore) {
                 $stuck[] = [
-                    'job_code' => (string) $schedule->getData('job_code'),
+                    'job_code' => (string)$schedule->getData('job_code'),
                     'executed_at' => $executedAt,
                 ];
             }
@@ -182,14 +182,14 @@ class GetSystemHealth implements ToolInterface
         $disabled = [];
         $types = $this->cacheTypeList->getTypes();
         foreach ($types as $type) {
-            if (!(bool) $type->getData('status')) {
-                $disabled[] = (string) $type->getData('id');
+            if (!(bool)$type->getData('status')) {
+                $disabled[] = (string)$type->getData('id');
             }
         }
 
         $invalidated = [];
         foreach ($this->cacheTypeList->getInvalidated() as $type) {
-            $invalidated[] = (string) $type->getData('id');
+            $invalidated[] = (string)$type->getData('id');
         }
 
         return [

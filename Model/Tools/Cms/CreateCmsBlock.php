@@ -109,10 +109,10 @@ class CreateCmsBlock implements WriteToolInterface
 
         return [
             'block' => [
-                'id' => (int) $saved->getId(),
+                'id' => (int)$saved->getId(),
                 'identifier' => $saved->getIdentifier(),
                 'title' => $saved->getTitle(),
-                'is_active' => (bool) $saved->isActive(),
+                'is_active' => (bool)$saved->isActive(),
             ],
         ];
     }

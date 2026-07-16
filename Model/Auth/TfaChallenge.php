@@ -50,7 +50,7 @@ class TfaChallenge
     {
         $data = $this->load($token);
 
-        return $data !== null ? (int) $data['admin_user_id'] : null;
+        return $data !== null ? (int)$data['admin_user_id'] : null;
     }
 
     /**

@@ -75,8 +75,8 @@ class ProductPerformance implements PromptInterface
         if (!is_string($top) && !is_int($top)) {
             throw new \InvalidArgumentException('Argument "top" must be a number of products, 1-15.');
         }
-        $top = trim((string) $top);
-        if (!ctype_digit($top) || (int) $top < 1 || (int) $top > 15) {
+        $top = trim((string)$top);
+        if (!ctype_digit($top) || (int)$top < 1 || (int)$top > 15) {
             throw new \InvalidArgumentException('Argument "top" must be a number of products, 1-15.');
         }
 

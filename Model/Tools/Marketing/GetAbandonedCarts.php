@@ -135,17 +135,17 @@ class GetAbandonedCarts implements ToolInterface
         $carts = [];
         $quoteIds = [];
         foreach ($collection as $quote) {
-            $quoteId = (int) $quote->getId();
+            $quoteId = (int)$quote->getId();
             $quoteIds[] = $quoteId;
             $carts[$quoteId] = [
                 'customer_name' => trim(
                     ($quote->getData('customer_firstname') ?? '') . ' ' . ($quote->getData('customer_lastname') ?? '')
                 ) ?: null,
                 'customer_email' => $quote->getData('customer_email'),
-                'is_guest' => (bool) $quote->getData('customer_is_guest'),
+                'is_guest' => (bool)$quote->getData('customer_is_guest'),
                 'created_at' => $quote->getData('created_at'),
                 'last_activity_at' => $quote->getData('updated_at'),
-                'grand_total' => (float) $quote->getData('grand_total'),
+                'grand_total' => (float)$quote->getData('grand_total'),
                 'currency' => $quote->getData('quote_currency_code'),
                 'items' => [],
             ];
@@ -183,12 +183,12 @@ class GetAbandonedCarts implements ToolInterface
 
         $itemsByQuote = [];
         foreach ($collection as $item) {
-            $itemsByQuote[(int) $item->getData('quote_id')][] = [
-                'sku' => (string) $item->getData('sku'),
-                'name' => (string) $item->getData('name'),
-                'qty' => (float) $item->getData('qty'),
-                'price' => (float) $item->getData('price'),
-                'row_total' => (float) $item->getData('row_total'),
+            $itemsByQuote[(int)$item->getData('quote_id')][] = [
+                'sku' => (string)$item->getData('sku'),
+                'name' => (string)$item->getData('name'),
+                'qty' => (float)$item->getData('qty'),
+                'price' => (float)$item->getData('price'),
+                'row_total' => (float)$item->getData('row_total'),
             ];
         }
 
@@ -203,13 +203,13 @@ class GetAbandonedCarts implements ToolInterface
         if (!isset($arguments[$key])) {
             return $default;
         }
-        if (!is_numeric($arguments[$key]) || (int) $arguments[$key] < $min) {
+        if (!is_numeric($arguments[$key]) || (int)$arguments[$key] < $min) {
             throw new \InvalidArgumentException(
                 sprintf('Argument "%s" must be an integer >= %d.', $key, $min)
             );
         }
 
-        return min((int) $arguments[$key], $max);
+        return min((int)$arguments[$key], $max);
     }
 
     /**
@@ -220,10 +220,10 @@ class GetAbandonedCarts implements ToolInterface
         if (!isset($arguments['min_total'])) {
             return null;
         }
-        if (!is_numeric($arguments['min_total']) || (float) $arguments['min_total'] < 0) {
+        if (!is_numeric($arguments['min_total']) || (float)$arguments['min_total'] < 0) {
             throw new \InvalidArgumentException('Argument "min_total" must be a number >= 0.');
         }
 
-        return (float) $arguments['min_total'];
+        return (float)$arguments['min_total'];
     }
 }
