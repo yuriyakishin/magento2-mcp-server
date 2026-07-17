@@ -273,6 +273,11 @@ JSON-RPC — they return arrays or throw exceptions.
 # unit tests (291; run setup:di:compile once first — some tests mock generated factories)
 vendor/bin/phpunit --no-configuration app/code/Yu/McpServer/Test/Unit
 
-# coding standard
-vendor/bin/phpcs --standard=Magento2 app/code/Yu/McpServer
 ```
+
+## Author
+
+Yuriy Akishin:
+- 📧 Email: yuriy.akishin@gmail.com
+- 💼 LinkedIn: https://www.linkedin.com/in/yuriyakishin/
+- 💻 GitHub: https://github.com/yuriyakishin
