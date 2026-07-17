@@ -25,6 +25,8 @@ class ToolRegistry
 
     /**
      * Checks whether a tool with the given name is registered.
+     *
+     * @param string $name Tool name to look up.
      */
     public function has(string $name): bool
     {
@@ -34,6 +36,7 @@ class ToolRegistry
     /**
      * Looks up a registered tool by name.
      *
+     * @param string $name Tool name to look up.
      * @throws McpException if no tool is registered under that name.
      */
     public function get(string $name): ToolInterface

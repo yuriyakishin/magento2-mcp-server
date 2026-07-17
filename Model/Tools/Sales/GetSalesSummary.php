@@ -129,6 +129,8 @@ class GetSalesSummary implements ToolInterface
      * Scans the period's orders once, aggregating counts, per-currency revenue/AOV and the
      * status breakdown. Canceled orders stay in the counts but out of the revenue.
      *
+     * @param string $createdFrom Period start date/time (inclusive).
+     * @param string|null $createdTo Period end date/time (inclusive), or null for no upper bound.
      * @return array{orders_total: int, by_currency: array<int, array<string, mixed>>,
      *     by_status: array<string, int>, truncated: bool}
      */
@@ -184,6 +186,9 @@ class GetSalesSummary implements ToolInterface
      * top-level items are counted (children of configurable/bundle rows would double the
      * quantities).
      *
+     * @param string $createdFrom Period start date/time (inclusive).
+     * @param string|null $createdTo Period end date/time (inclusive), or null for no upper bound.
+     * @param int $limit Max number of top products to return.
      * @return array<int, array{sku: string, name: string, qty: float, revenue: float}>
      */
     private function bestsellers(string $createdFrom, ?string $createdTo, int $limit): array
@@ -228,6 +233,9 @@ class GetSalesSummary implements ToolInterface
 
     /**
      * Validates an optional date argument: "YYYY-MM-DD" or "YYYY-MM-DD HH:MM:SS".
+     *
+     * @param array $arguments Raw MCP tool call arguments.
+     * @param string $key Argument name to read and validate.
      */
     private function dateArgument(array $arguments, string $key): ?string
     {
@@ -249,6 +257,8 @@ class GetSalesSummary implements ToolInterface
 
     /**
      * Validates the optional "top_products" argument (0 disables the bestseller list).
+     *
+     * @param array $arguments Raw MCP tool call arguments.
      */
     private function topProductsArgument(array $arguments): int
     {

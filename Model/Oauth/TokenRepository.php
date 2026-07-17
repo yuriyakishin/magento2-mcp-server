@@ -19,6 +19,7 @@ class TokenRepository
     }
 
     /**
+     * @param Token $token OAuth token entity to persist.
      * @throws \Exception if the token cannot be persisted.
      */
     public function save(Token $token): Token
@@ -29,6 +30,7 @@ class TokenRepository
     }
 
     /**
+     * @param string $accessToken Access token value to look up.
      * @throws NoSuchEntityException if no token matches this access token value.
      */
     public function getByAccessToken(string $accessToken): Token
@@ -45,6 +47,7 @@ class TokenRepository
     }
 
     /**
+     * @param string $refreshToken Refresh token value to look up.
      * @throws NoSuchEntityException if no token matches this refresh token value.
      */
     public function getByRefreshToken(string $refreshToken): Token

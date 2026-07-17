@@ -133,6 +133,7 @@ class UpdateCmsBlock implements WriteToolInterface
     /**
      * Extracts and validates the fields the caller wants to change.
      *
+     * @param array $arguments Raw MCP tool call arguments.
      * @return array<string, string|bool>
      */
     private function collectChanges(array $arguments): array
@@ -156,6 +157,9 @@ class UpdateCmsBlock implements WriteToolInterface
     /**
      * Validates a provided string argument: emptying a field is not allowed (a block wiped
      * to an empty body would be deletion in all but name).
+     *
+     * @param array $arguments Raw MCP tool call arguments.
+     * @param string $name Argument name to read and validate.
      */
     private function requiredStringArgument(array $arguments, string $name): string
     {

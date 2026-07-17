@@ -235,6 +235,10 @@ class ListReviews implements ToolInterface
     /**
      * Whether an average rating passes the requested min/max bounds. Reviews without a
      * rating only pass when no bound is set at all.
+     *
+     * @param float|null $rating Product's average rating, or null when it has none.
+     * @param int|null $min Lower bound (inclusive), or null for no lower bound.
+     * @param int|null $max Upper bound (inclusive), or null for no upper bound.
      */
     private function matchesRatingRange(?float $rating, ?int $min, ?int $max): bool
     {
@@ -250,6 +254,8 @@ class ListReviews implements ToolInterface
 
     /**
      * Validates the optional "status" argument.
+     *
+     * @param array $arguments Raw MCP tool call arguments.
      */
     private function statusArgument(array $arguments): string
     {
@@ -265,6 +271,9 @@ class ListReviews implements ToolInterface
 
     /**
      * Validates an optional date argument: "YYYY-MM-DD" or "YYYY-MM-DD HH:MM:SS".
+     *
+     * @param array $arguments Raw MCP tool call arguments.
+     * @param string $key Argument name to read and validate.
      */
     private function dateArgument(array $arguments, string $key): ?string
     {
@@ -287,6 +296,7 @@ class ListReviews implements ToolInterface
     /**
      * Validates the optional rating_min/rating_max arguments (integers 1-5, min <= max).
      *
+     * @param array $arguments Raw MCP tool call arguments.
      * @return array{0: ?int, 1: ?int}
      */
     private function ratingRangeArguments(array $arguments): array
@@ -310,6 +320,11 @@ class ListReviews implements ToolInterface
 
     /**
      * Validates an optional positive-integer argument, applying a default and a cap.
+     *
+     * @param array $arguments Raw MCP tool call arguments.
+     * @param string $key Argument name to read and validate.
+     * @param int $default Value used when the argument is absent.
+     * @param int $max Cap applied to the value.
      */
     private function positiveIntArgument(array $arguments, string $key, int $default, int $max): int
     {

@@ -197,6 +197,12 @@ class GetAbandonedCarts implements ToolInterface
 
     /**
      * Validates an optional integer argument against a minimum, applying a default and a cap.
+     *
+     * @param array $arguments Raw MCP tool call arguments.
+     * @param string $key Argument name to read and validate.
+     * @param int $default Value used when the argument is absent.
+     * @param int $min Minimum accepted value.
+     * @param int $max Cap applied to the value.
      */
     private function boundedIntArgument(array $arguments, string $key, int $default, int $min, int $max): int
     {
@@ -214,6 +220,8 @@ class GetAbandonedCarts implements ToolInterface
 
     /**
      * Validates the optional "min_total" argument.
+     *
+     * @param array $arguments Raw MCP tool call arguments.
      */
     private function minTotalArgument(array $arguments): ?float
     {

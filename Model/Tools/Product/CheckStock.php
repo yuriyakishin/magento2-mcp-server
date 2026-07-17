@@ -83,6 +83,8 @@ class CheckStock implements ContextAwareToolInterface
 
     /**
      * @param array $arguments Expects `skus` (string[], required).
+     * @param AdminContext|null $adminContext The caller's resolved identity, or null for
+     *     an anonymous request (no bearer token was supplied).
      * @return array{stock: array<int, array<string, mixed>>, count: int}
      */
     public function executeWithContext(array $arguments, ?AdminContext $adminContext): array
@@ -131,6 +133,7 @@ class CheckStock implements ContextAwareToolInterface
     /**
      * Validates the "skus" argument: a non-empty, de-duplicated list of SKU strings.
      *
+     * @param array $arguments Raw MCP tool call arguments.
      * @return string[]
      */
     private function skusArgument(array $arguments): array

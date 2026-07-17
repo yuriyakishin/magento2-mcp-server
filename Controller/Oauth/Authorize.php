@@ -70,6 +70,8 @@ class Authorize implements HttpGetActionInterface, HttpPostActionInterface, Csrf
     /**
      * Never raises a CSRF exception — see the class-level comment for why the global
      * form_key validation can't be used on this flow.
+     *
+     * @param RequestInterface $request Current HTTP request.
      */
     public function createCsrfValidationException(RequestInterface $request): ?InvalidRequestException
     {
@@ -78,6 +80,8 @@ class Authorize implements HttpGetActionInterface, HttpPostActionInterface, Csrf
 
     /**
      * Always reports the request as CSRF-valid — see createCsrfValidationException().
+     *
+     * @param RequestInterface $request Current HTTP request.
      */
     public function validateForCsrf(RequestInterface $request): ?bool
     {
@@ -165,8 +169,7 @@ class Authorize implements HttpGetActionInterface, HttpPostActionInterface, Csrf
      * issues the authorization code right away or, when 2FA is enforced for the admin,
      * challenges them for an authenticator-app code first.
      *
-     * @param array{client_id: string, redirect_uri: string, code_challenge: string,
-     *     code_challenge_method: string, state: string} $params
+     * @param array $params OAuth params resolved by resolveAuthorizeParams().
      */
     private function handleLogin(array $params): ResultInterface
     {
@@ -236,8 +239,7 @@ class Authorize implements HttpGetActionInterface, HttpPostActionInterface, Csrf
      * Verifies the submitted authenticator-app code against the pending challenge and, on
      * success, issues the authorization code the password step deferred.
      *
-     * @param array{client_id: string, redirect_uri: string, code_challenge: string,
-     *     code_challenge_method: string, state: string} $params
+     * @param array $params OAuth params resolved by resolveAuthorizeParams().
      */
     private function handleTwoFactor(array $params): ResultInterface
     {
@@ -280,8 +282,8 @@ class Authorize implements HttpGetActionInterface, HttpPostActionInterface, Csrf
      * Issues a single-use authorization code bound to the admin user and the PKCE
      * challenge, and redirects the browser back to the client's redirect_uri.
      *
-     * @param array{client_id: string, redirect_uri: string, code_challenge: string,
-     *     code_challenge_method: string, state: string} $params
+     * @param array $params OAuth params resolved by resolveAuthorizeParams().
+     * @param int $adminUserId Authenticated admin user id the code is bound to.
      */
     private function issueAuthCode(array $params, int $adminUserId): ResultInterface
     {
@@ -305,8 +307,8 @@ class Authorize implements HttpGetActionInterface, HttpPostActionInterface, Csrf
     /**
      * Renders the minimal HTML username/password form.
      *
-     * @param array{client_id: string, redirect_uri: string, code_challenge: string,
-     *     code_challenge_method: string, state: string} $params
+     * @param array $params OAuth params resolved by resolveAuthorizeParams().
+     * @param string|null $error Error message to display above the form, if any.
      */
     private function renderLoginForm(array $params, ?string $error = null): Raw
     {
@@ -332,8 +334,9 @@ HTML;
      * Renders the second-step form asking for the authenticator-app (TOTP) code, carrying
      * the pending challenge token as a hidden field.
      *
-     * @param array{client_id: string, redirect_uri: string, code_challenge: string,
-     *     code_challenge_method: string, state: string} $params
+     * @param array $params OAuth params resolved by resolveAuthorizeParams().
+     * @param string $challengeToken Pending-login token from TfaChallenge::issue().
+     * @param string|null $error Error message to display above the form, if any.
      */
     private function renderTfaForm(array $params, string $challengeToken, ?string $error = null): Raw
     {
@@ -362,8 +365,11 @@ HTML;
      * params through as hidden fields since this flow doesn't rely on a server-side
      * session between requests.
      *
-     * @param array{client_id: string, redirect_uri: string, code_challenge: string,
-     *     code_challenge_method: string, state: string} $params
+     * @param string $heading Page heading text.
+     * @param string $note Explanatory note shown below the heading.
+     * @param string $formFieldsHtml Pre-rendered HTML for the step-specific form fields.
+     * @param array $params OAuth params resolved by resolveAuthorizeParams(), threaded through as hidden fields.
+     * @param string|null $error Error message to display above the form, if any.
      */
     private function renderAuthPage(
         string $heading,
@@ -468,6 +474,8 @@ HTML;
 
     /**
      * Escapes a value for safe interpolation into the HTML form.
+     *
+     * @param string $value Raw value to escape.
      */
     private function escape(string $value): string
     {
@@ -476,6 +484,10 @@ HTML;
 
     /**
      * Redirects the browser back to the client with the freshly issued authorization code.
+     *
+     * @param string $redirectUri Client's registered redirect_uri to redirect back to.
+     * @param string $code Freshly issued single-use authorization code.
+     * @param string $state Opaque client state value to echo back unchanged.
      */
     private function redirectWithCode(string $redirectUri, string $code, string $state): Raw
     {
@@ -496,6 +508,9 @@ HTML;
 
     /**
      * Builds a plain HTML response with the given status code.
+     *
+     * @param string $content HTML body to send.
+     * @param int $httpCode HTTP status code to set on the response.
      */
     private function htmlResult(string $content, int $httpCode): Raw
     {

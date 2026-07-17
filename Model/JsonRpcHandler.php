@@ -36,6 +36,8 @@ class JsonRpcHandler
      * Dispatches a batch (array) of JSON-RPC messages and collects their responses.
      *
      * @param array[] $messages Decoded JSON-RPC requests/notifications.
+     * @param AdminContext|null $adminContext The caller's resolved identity, or null for
+     *     an anonymous request (no bearer token was supplied).
      * @return array[] Responses, in the same order, with notifications omitted.
      * @throws UnauthorizedException if any message in the batch calls a restricted tool
      *     anonymously — aborts the whole batch rather than returning partial responses, so
@@ -186,6 +188,9 @@ class JsonRpcHandler
      * chat session: the model never learns they exist, so it never calls them, so it never
      * hits the 401 that would prompt the user to log in. Access control still happens —
      * just at `tools/call` time, not at `tools/list` time.
+     *
+     * @param AdminContext|null $adminContext Unused — tools/list deliberately ignores
+     *     identity, per the note above; kept for a consistent dispatch-method signature.
      */
     private function toolsList(?AdminContext $adminContext): array
     {
@@ -213,6 +218,8 @@ class JsonRpcHandler
      * (Unauthorized/Forbidden), not tool business-logic errors.
      *
      * @param array $params The `tools/call` params: `name` and `arguments`.
+     * @param AdminContext|null $adminContext The caller's resolved identity, or null for
+     *     an anonymous request (no bearer token was supplied).
      * @return array The MCP tool result (`content` + `isError`).
      */
     private function toolsCall(array $params, ?AdminContext $adminContext): array
@@ -347,6 +354,8 @@ class JsonRpcHandler
 
     /**
      * Whether this tool is a write tool that is currently switched off by configuration.
+     *
+     * @param ToolInterface $tool Tool to check.
      */
     private function isDisabledWriteTool(ToolInterface $tool): bool
     {
@@ -354,6 +363,9 @@ class JsonRpcHandler
     }
 
     /**
+     * @param ToolInterface $tool Tool being called.
+     * @param AdminContext|null $adminContext The caller's resolved identity, or null for
+     *     an anonymous request (no bearer token was supplied).
      * @throws UnauthorizedException if the tool requires a resource and no identity was resolved.
      * @throws ForbiddenException if the tool requires a resource this identity doesn't have.
      */

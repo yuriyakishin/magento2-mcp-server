@@ -18,6 +18,8 @@ class AuthCode extends AbstractDb
 
     /**
      * Looks up a row id by its authorization code value.
+     *
+     * @param string $code Authorization code value to look up.
      */
     public function getIdByCode(string $code): ?int
     {

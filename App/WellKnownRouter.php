@@ -43,6 +43,7 @@ class WellKnownRouter implements RouterInterface
     }
 
     /**
+     * @param RequestInterface $request Current HTTP request.
      * @return ActionInterface|null The matched controller, or null to let other routers try.
      */
     public function match(RequestInterface $request): ?ActionInterface

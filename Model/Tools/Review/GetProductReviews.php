@@ -140,6 +140,8 @@ class GetProductReviews implements ToolInterface
 
     /**
      * Validates the optional "limit" argument.
+     *
+     * @param array $arguments Raw MCP tool call arguments.
      */
     private function limitArgument(array $arguments): int
     {

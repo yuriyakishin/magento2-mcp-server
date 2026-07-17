@@ -26,6 +26,8 @@ class AnonymousRateLimiter
      * Records one anonymous request for this IP and reports whether the IP is now over
      * the per-minute limit. Counting before answering means a blocked client cannot
      * keep the window fresh for free — it has to actually back off.
+     *
+     * @param string $ipAddress Caller's IP address (proxy-aware, see getClientIp()).
      */
     public function registerAndCheck(string $ipAddress): bool
     {
@@ -46,6 +48,8 @@ class AnonymousRateLimiter
 
     /**
      * Current number of recent anonymous requests recorded for this IP.
+     *
+     * @param string $ipAddress Caller's IP address.
      */
     private function getRequests(string $ipAddress): int
     {
@@ -56,6 +60,8 @@ class AnonymousRateLimiter
 
     /**
      * Cache key for this IP's request counter.
+     *
+     * @param string $ipAddress Caller's IP address.
      */
     private function cacheId(string $ipAddress): string
     {

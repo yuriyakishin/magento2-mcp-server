@@ -109,6 +109,8 @@ class ListActivePromotions implements ToolInterface
 
     /**
      * The rule's primary coupon code, or null when none is set.
+     *
+     * @param Rule $rule Cart price rule to read the coupon from.
      */
     private function couponCode(Rule $rule): ?string
     {
@@ -120,6 +122,9 @@ class ListActivePromotions implements ToolInterface
     /**
      * Removes every occurrence of the rule's coupon code (case-insensitive) from
      * merchant-authored text, so the code can't leak through name/description.
+     *
+     * @param string $text Merchant-authored text to redact.
+     * @param string|null $couponCode Coupon code to remove, or null when the rule has none.
      */
     private function redactCouponCode(string $text, ?string $couponCode): string
     {
@@ -132,6 +137,8 @@ class ListActivePromotions implements ToolInterface
 
     /**
      * Validates the optional "limit" argument.
+     *
+     * @param array $arguments Raw MCP tool call arguments.
      */
     private function limitArgument(array $arguments): int
     {

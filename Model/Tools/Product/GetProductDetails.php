@@ -89,6 +89,8 @@ class GetProductDetails implements ContextAwareToolInterface
 
     /**
      * @param array $arguments Expects `sku` (string, required).
+     * @param AdminContext|null $adminContext The caller's resolved identity, or null for
+     *     an anonymous request (no bearer token was supplied).
      * @return array{product: array<string, mixed>}
      */
     public function executeWithContext(array $arguments, ?AdminContext $adminContext): array

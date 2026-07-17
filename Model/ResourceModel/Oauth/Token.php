@@ -18,6 +18,8 @@ class Token extends AbstractDb
 
     /**
      * Looks up a row id by its access token value.
+     *
+     * @param string $accessToken Access token value to look up.
      */
     public function getIdByAccessToken(string $accessToken): ?int
     {
@@ -26,6 +28,8 @@ class Token extends AbstractDb
 
     /**
      * Looks up a row id by its refresh token value.
+     *
+     * @param string $refreshToken Refresh token value to look up.
      */
     public function getIdByRefreshToken(string $refreshToken): ?int
     {
@@ -34,6 +38,9 @@ class Token extends AbstractDb
 
     /**
      * Looks up a row id by an arbitrary unique column value.
+     *
+     * @param string $column Column name to filter on.
+     * @param string $value Value to match in that column.
      */
     private function getIdByColumn(string $column, string $value): ?int
     {

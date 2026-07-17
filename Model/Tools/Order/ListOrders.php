@@ -156,6 +156,8 @@ class ListOrders implements ToolInterface
 
     /**
      * Validates the optional "status" argument.
+     *
+     * @param array $arguments Raw MCP tool call arguments.
      */
     private function statusArgument(array $arguments): ?string
     {
@@ -172,6 +174,9 @@ class ListOrders implements ToolInterface
 
     /**
      * Validates an optional date argument: "YYYY-MM-DD" or "YYYY-MM-DD HH:MM:SS".
+     *
+     * @param array $arguments Raw MCP tool call arguments.
+     * @param string $key Argument name to read and validate.
      */
     private function dateArgument(array $arguments, string $key): ?string
     {
@@ -193,6 +198,11 @@ class ListOrders implements ToolInterface
 
     /**
      * Validates an optional positive-integer argument, applying a default and a cap.
+     *
+     * @param array $arguments Raw MCP tool call arguments.
+     * @param string $key Argument name to read and validate.
+     * @param int $default Value used when the argument is absent.
+     * @param int $max Cap applied to the value.
      */
     private function positiveIntArgument(array $arguments, string $key, int $default, int $max): int
     {

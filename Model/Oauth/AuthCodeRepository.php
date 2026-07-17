@@ -19,6 +19,7 @@ class AuthCodeRepository
     }
 
     /**
+     * @param AuthCode $authCode Authorization code entity to persist.
      * @throws \Exception if the authorization code cannot be persisted.
      */
     public function save(AuthCode $authCode): AuthCode
@@ -29,6 +30,7 @@ class AuthCodeRepository
     }
 
     /**
+     * @param string $code Authorization code value to look up.
      * @throws NoSuchEntityException if no authorization code matches this value.
      */
     public function getByCode(string $code): AuthCode

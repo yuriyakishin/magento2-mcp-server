@@ -126,6 +126,8 @@ class GetStoreInfo implements ToolInterface
 
     /**
      * Reads a config value in the current store scope.
+     *
+     * @param string $path Configuration path to read.
      */
     private function configValue(string $path): mixed
     {

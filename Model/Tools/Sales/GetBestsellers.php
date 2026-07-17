@@ -152,6 +152,8 @@ class GetBestsellers implements ToolInterface
 
     /**
      * Validates the optional "sort_by" argument.
+     *
+     * @param array $arguments Raw MCP tool call arguments.
      */
     private function sortByArgument(array $arguments): string
     {
@@ -165,6 +167,8 @@ class GetBestsellers implements ToolInterface
 
     /**
      * Validates the optional "limit" argument.
+     *
+     * @param array $arguments Raw MCP tool call arguments.
      */
     private function limitArgument(array $arguments): int
     {

@@ -144,6 +144,9 @@ class UpdateCategory implements WriteToolInterface
     /**
      * Reads the value a field has before the update, normalized the same way the
      * response reports the new value.
+     *
+     * @param \Magento\Catalog\Api\Data\CategoryInterface $category Category being updated.
+     * @param string $field Field name to read.
      */
     private function currentValue(\Magento\Catalog\Api\Data\CategoryInterface $category, string $field): mixed
     {
@@ -157,6 +160,10 @@ class UpdateCategory implements WriteToolInterface
 
     /**
      * Writes one validated field onto the loaded category model.
+     *
+     * @param \Magento\Catalog\Api\Data\CategoryInterface $category Category being updated.
+     * @param string $field Field name to write.
+     * @param mixed $value Validated value to write.
      */
     private function applyField(\Magento\Catalog\Api\Data\CategoryInterface $category, string $field, mixed $value): void
     {
@@ -170,6 +177,8 @@ class UpdateCategory implements WriteToolInterface
 
     /**
      * Validates the required "category_id" argument.
+     *
+     * @param array $arguments Raw MCP tool call arguments.
      */
     private function categoryIdArgument(array $arguments): int
     {
@@ -188,6 +197,7 @@ class UpdateCategory implements WriteToolInterface
      * Validates every provided editable field and returns the map of fields to apply.
      * Throws when no editable field is provided at all.
      *
+     * @param array $arguments Raw MCP tool call arguments.
      * @return array<string, mixed>
      */
     private function fieldArguments(array $arguments): array

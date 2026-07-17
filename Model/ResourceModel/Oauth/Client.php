@@ -18,6 +18,8 @@ class Client extends AbstractDb
 
     /**
      * Looks up a row id by its public client_id value.
+     *
+     * @param string $clientId Public client_id value to look up.
      */
     public function getIdByClientId(string $clientId): ?int
     {

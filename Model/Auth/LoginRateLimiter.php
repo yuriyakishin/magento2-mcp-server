@@ -25,6 +25,8 @@ class LoginRateLimiter
 
     /**
      * Whether this IP has exceeded the allowed number of recent failed attempts.
+     *
+     * @param string $ipAddress Caller's IP address.
      */
     public function isBlocked(string $ipAddress): bool
     {
@@ -33,6 +35,8 @@ class LoginRateLimiter
 
     /**
      * Records a failed login attempt for this IP.
+     *
+     * @param string $ipAddress Caller's IP address.
      */
     public function registerFailure(string $ipAddress): void
     {
@@ -42,6 +46,8 @@ class LoginRateLimiter
 
     /**
      * Clears the failure count for this IP after a successful login.
+     *
+     * @param string $ipAddress Caller's IP address.
      */
     public function reset(string $ipAddress): void
     {
@@ -50,6 +56,8 @@ class LoginRateLimiter
 
     /**
      * Current number of recent failed attempts recorded for this IP.
+     *
+     * @param string $ipAddress Caller's IP address.
      */
     private function getAttempts(string $ipAddress): int
     {
@@ -60,6 +68,8 @@ class LoginRateLimiter
 
     /**
      * Cache key for this IP's failure counter.
+     *
+     * @param string $ipAddress Caller's IP address.
      */
     private function cacheId(string $ipAddress): string
     {

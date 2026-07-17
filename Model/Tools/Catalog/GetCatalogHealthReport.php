@@ -139,7 +139,9 @@ class GetCatalogHealthReport implements ToolInterface
     /**
      * Counts a finding and keeps the SKU while the sample list has room.
      *
-     * @param array{count: int, sample_skus: string[]} $check
+     * @param array $check Check bucket (count, sample_skus), modified in place.
+     * @param string $sku SKU that triggered the finding.
+     * @param int $sampleSize Max number of SKUs to keep in the sample.
      */
     private function record(array &$check, string $sku, int $sampleSize): void
     {
@@ -151,6 +153,8 @@ class GetCatalogHealthReport implements ToolInterface
 
     /**
      * Whether an attribute value is empty for audit purposes (null, "", or whitespace).
+     *
+     * @param mixed $value Attribute value to check.
      */
     private function isBlank(mixed $value): bool
     {
@@ -159,6 +163,8 @@ class GetCatalogHealthReport implements ToolInterface
 
     /**
      * Validates the optional "include_disabled" argument.
+     *
+     * @param array $arguments Raw MCP tool call arguments.
      */
     private function includeDisabledArgument(array $arguments): bool
     {
@@ -174,6 +180,8 @@ class GetCatalogHealthReport implements ToolInterface
 
     /**
      * Validates the optional "sample_size" argument.
+     *
+     * @param array $arguments Raw MCP tool call arguments.
      */
     private function sampleSizeArgument(array $arguments): int
     {

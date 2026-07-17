@@ -56,6 +56,8 @@ class Index implements HttpPostActionInterface, HttpGetActionInterface, CsrfAwar
     /**
      * Never raises a CSRF exception — see the class-level note on why this endpoint
      * is exempt from form-key validation.
+     *
+     * @param RequestInterface $request Current HTTP request.
      */
     public function createCsrfValidationException(RequestInterface $request): ?InvalidRequestException
     {
@@ -64,6 +66,8 @@ class Index implements HttpPostActionInterface, HttpGetActionInterface, CsrfAwar
 
     /**
      * Always reports the request as CSRF-valid — see createCsrfValidationException().
+     *
+     * @param RequestInterface $request Current HTTP request.
      */
     public function validateForCsrf(RequestInterface $request): ?bool
     {
@@ -153,6 +157,7 @@ class Index implements HttpPostActionInterface, HttpGetActionInterface, CsrfAwar
      * Yu\McpServer\Model\Config. Disabled by default: payloads can contain personal data
      * (customer emails, order numbers) and must never be dumped in production by default.
      *
+     * @param string $label Log line prefix identifying what is being logged.
      * @param string|array $data Raw request body string, or a response array to JSON-encode.
      */
     private function logFullBody(string $label, string|array $data): void
@@ -199,6 +204,7 @@ class Index implements HttpPostActionInterface, HttpGetActionInterface, CsrfAwar
 
     /**
      * @param array $data JSON-RPC response body (or batch of responses) to encode as JSON.
+     * @param int $httpCode HTTP status code to set on the response.
      */
     private function jsonResult(array $data, int $httpCode): Json
     {
@@ -247,6 +253,8 @@ class Index implements HttpPostActionInterface, HttpGetActionInterface, CsrfAwar
      * The header carries `resource_metadata` (RFC 9728 §5.1) — the MCP Authorization spec
      * makes it mandatory, and it's what an OAuth-aware client (claude.ai) reads to find
      * the discovery document and start its login flow. Without it the 401 is a dead end.
+     *
+     * @param string $message Error message to report in the JSON-RPC error body.
      */
     private function unauthorizedResult(string $message): Json
     {

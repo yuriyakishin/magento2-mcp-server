@@ -13,6 +13,9 @@ class DateRange
 {
     /**
      * Validates a required date argument: "YYYY-MM-DD" or "YYYY-MM-DD HH:MM:SS".
+     *
+     * @param array $arguments Raw MCP tool call arguments.
+     * @param string $key Argument name to read and validate.
      */
     public static function requiredDate(array $arguments, string $key): string
     {
@@ -28,6 +31,9 @@ class DateRange
      * Validates an optional date argument. A date-only upper bound ("*_to" keys) is
      * expanded to the end of that day so "whole day included" semantics match
      * sales_summary.
+     *
+     * @param array $arguments Raw MCP tool call arguments.
+     * @param string $key Argument name to read and validate.
      */
     public static function optionalDate(array $arguments, string $key): ?string
     {

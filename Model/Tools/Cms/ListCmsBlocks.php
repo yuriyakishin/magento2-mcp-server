@@ -108,6 +108,8 @@ class ListCmsBlocks implements ToolInterface
 
     /**
      * Validates the optional "is_active" argument (null = no filter).
+     *
+     * @param array $arguments Raw MCP tool call arguments.
      */
     private function isActiveArgument(array $arguments): ?bool
     {
@@ -123,6 +125,8 @@ class ListCmsBlocks implements ToolInterface
 
     /**
      * Validates the optional "limit" argument.
+     *
+     * @param array $arguments Raw MCP tool call arguments.
      */
     private function limitArgument(array $arguments): int
     {

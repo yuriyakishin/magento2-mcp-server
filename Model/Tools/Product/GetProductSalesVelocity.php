@@ -140,6 +140,8 @@ class GetProductSalesVelocity implements ToolInterface
      * since the given date. Only top-level order item rows are counted — child rows of
      * configurable/bundle items would double the quantities.
      *
+     * @param string $sku SKU to sum sales for.
+     * @param string $from Start date/time (inclusive) to sum sales from.
      * @return array{0: float, 1: int, 2: float} [units sold, orders count, revenue]
      */
     private function sumSales(string $sku, string $from): array
@@ -167,6 +169,8 @@ class GetProductSalesVelocity implements ToolInterface
 
     /**
      * Validates the required "sku" argument.
+     *
+     * @param array $arguments Raw MCP tool call arguments.
      */
     private function skuArgument(array $arguments): string
     {
@@ -180,6 +184,8 @@ class GetProductSalesVelocity implements ToolInterface
 
     /**
      * Validates the optional "days" argument.
+     *
+     * @param array $arguments Raw MCP tool call arguments.
      */
     private function daysArgument(array $arguments): int
     {

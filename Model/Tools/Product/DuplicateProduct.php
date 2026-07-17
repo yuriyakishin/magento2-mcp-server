@@ -171,6 +171,9 @@ class DuplicateProduct implements WriteToolInterface
 
     /**
      * Validates a required SKU argument.
+     *
+     * @param array $arguments Raw MCP tool call arguments.
+     * @param string $key Argument name to read and validate.
      */
     private function skuArgument(array $arguments, string $key): string
     {
@@ -192,6 +195,8 @@ class DuplicateProduct implements WriteToolInterface
 
     /**
      * Validates the optional "name" argument.
+     *
+     * @param array $arguments Raw MCP tool call arguments.
      */
     private function nameArgument(array $arguments): ?string
     {
@@ -207,6 +212,8 @@ class DuplicateProduct implements WriteToolInterface
 
     /**
      * Validates the optional "price" argument.
+     *
+     * @param array $arguments Raw MCP tool call arguments.
      */
     private function priceArgument(array $arguments): ?float
     {
@@ -221,6 +228,7 @@ class DuplicateProduct implements WriteToolInterface
     }
 
     /**
+     * @param string $sku SKU to check.
      * @throws \RuntimeException if a product with this SKU already exists — duplication
      *     never silently updates an existing product.
      */

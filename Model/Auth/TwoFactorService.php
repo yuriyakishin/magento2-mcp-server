@@ -47,6 +47,7 @@ class TwoFactorService
     /**
      * Decides what the login flow must do about 2FA for this admin after the password step.
      *
+     * @param int $adminUserId Admin user id who just passed the password step.
      * @return string one of the RESULT_* constants:
      *   - RESULT_NOT_REQUIRED: proceed without a code (module disabled or no provider forced)
      *   - RESULT_REQUIRED: the user has an activated authenticator app — ask for a code
@@ -77,6 +78,9 @@ class TwoFactorService
 
     /**
      * Verifies a TOTP code against the admin's configured authenticator-app secret.
+     *
+     * @param int $adminUserId Admin user id whose secret the code is verified against.
+     * @param string $code Submitted TOTP code.
      */
     public function verifyCode(int $adminUserId, string $code): bool
     {

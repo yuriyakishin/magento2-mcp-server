@@ -86,6 +86,8 @@ class GetCategoryProducts implements ContextAwareToolInterface
 
     /**
      * @param array $arguments Expects `category_id` (int, required) and optional `limit`.
+     * @param AdminContext|null $adminContext The caller's resolved identity, or null for
+     *     an anonymous request (no bearer token was supplied).
      * @return array{category: array{id: int, name: string}, products: array<int, array<string, mixed>>, count: int}
      */
     public function executeWithContext(array $arguments, ?AdminContext $adminContext): array
@@ -130,6 +132,8 @@ class GetCategoryProducts implements ContextAwareToolInterface
 
     /**
      * Validates the required "category_id" argument.
+     *
+     * @param array $arguments Raw MCP tool call arguments.
      */
     private function categoryIdArgument(array $arguments): int
     {
@@ -145,6 +149,8 @@ class GetCategoryProducts implements ContextAwareToolInterface
 
     /**
      * Validates the optional "limit" argument.
+     *
+     * @param array $arguments Raw MCP tool call arguments.
      */
     private function limitArgument(array $arguments): int
     {

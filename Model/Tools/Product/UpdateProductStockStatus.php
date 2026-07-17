@@ -140,6 +140,7 @@ class UpdateProductStockStatus implements WriteToolInterface
     /**
      * Validates the "skus" argument: a non-empty, de-duplicated list of SKU strings.
      *
+     * @param array $arguments Raw MCP tool call arguments.
      * @return string[]
      */
     private function skusArgument(array $arguments): array
@@ -169,6 +170,8 @@ class UpdateProductStockStatus implements WriteToolInterface
 
     /**
      * Validates the optional "status" argument.
+     *
+     * @param array $arguments Raw MCP tool call arguments.
      */
     private function statusArgument(array $arguments): ?string
     {
@@ -185,6 +188,8 @@ class UpdateProductStockStatus implements WriteToolInterface
 
     /**
      * Validates the optional "qty" argument.
+     *
+     * @param array $arguments Raw MCP tool call arguments.
      */
     private function qtyArgument(array $arguments): ?float
     {

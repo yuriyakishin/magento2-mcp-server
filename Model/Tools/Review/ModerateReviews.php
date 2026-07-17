@@ -127,6 +127,7 @@ class ModerateReviews implements WriteToolInterface
      * Validates the "review_ids" argument: a non-empty, de-duplicated list of positive
      * integers, capped at 20 per call.
      *
+     * @param array $arguments Raw MCP tool call arguments.
      * @return int[]
      */
     private function reviewIdsArgument(array $arguments): array
@@ -156,6 +157,8 @@ class ModerateReviews implements WriteToolInterface
 
     /**
      * Validates the "status" argument.
+     *
+     * @param array $arguments Raw MCP tool call arguments.
      */
     private function statusArgument(array $arguments): string
     {

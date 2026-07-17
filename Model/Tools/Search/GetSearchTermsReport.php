@@ -84,6 +84,8 @@ class GetSearchTermsReport implements ToolInterface
     /**
      * Fetches one list of search terms ordered by popularity (total times searched).
      *
+     * @param int $limit Max number of terms to return.
+     * @param bool $zeroResultsOnly Whether to only return terms with zero search results.
      * @return array<int, array{term: string, hits: int, results: int}>
      */
     private function fetchTerms(int $limit, bool $zeroResultsOnly): array
@@ -110,6 +112,8 @@ class GetSearchTermsReport implements ToolInterface
 
     /**
      * Validates the optional "limit" argument.
+     *
+     * @param array $arguments Raw MCP tool call arguments.
      */
     private function limitArgument(array $arguments): int
     {

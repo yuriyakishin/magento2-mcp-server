@@ -19,6 +19,7 @@ class ClientRepository
     }
 
     /**
+     * @param Client $client OAuth client entity to persist.
      * @throws \Exception if the client cannot be persisted.
      */
     public function save(Client $client): Client
@@ -29,6 +30,7 @@ class ClientRepository
     }
 
     /**
+     * @param string $clientId Public client_id value to look up.
      * @throws NoSuchEntityException if no client is registered under this id.
      */
     public function getById(string $clientId): Client

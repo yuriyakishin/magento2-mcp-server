@@ -102,6 +102,8 @@ class GetPaymentMethodStats implements ToolInterface
     /**
      * The period's non-canceled orders, keyed by entity id.
      *
+     * @param string $createdFrom Period start date/time (inclusive).
+     * @param string|null $createdTo Period end date/time (inclusive), or null for no upper bound.
      * @return array{0: array<int, array{currency: string, grand_total: float}>, 1: bool}
      */
     private function ordersForPeriod(string $createdFrom, ?string $createdTo): array
@@ -135,7 +137,7 @@ class GetPaymentMethodStats implements ToolInterface
      * method and currency. The method title is taken from the payment row's
      * additional_information when present (falls back to the method code).
      *
-     * @param array<int, array{currency: string, grand_total: float}> $orders
+     * @param array $orders Non-canceled orders keyed by entity id, from ordersForPeriod().
      * @return array<int, array<string, mixed>>
      */
     private function aggregateByMethod(array $orders): array
@@ -182,6 +184,9 @@ class GetPaymentMethodStats implements ToolInterface
     /**
      * Extracts the human-readable method title from the payment's additional_information
      * (JSON string or already-decoded array), falling back to the method code.
+     *
+     * @param mixed $additionalInformation Payment row's additional_information value.
+     * @param string $fallback Value to use when no title can be extracted.
      */
     private function methodTitle(mixed $additionalInformation, string $fallback): string
     {

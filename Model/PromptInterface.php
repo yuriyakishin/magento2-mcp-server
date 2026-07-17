@@ -32,7 +32,7 @@ interface PromptInterface
     /**
      * Renders the prompt into MCP messages.
      *
-     * @param array<string, string> $arguments Values for the declared arguments.
+     * @param array $arguments Values for the declared arguments, keyed by argument name.
      * @return array<int, array{role: string, content: array{type: string, text: string}}>
      * @throws \InvalidArgumentException on malformed argument values.
      */

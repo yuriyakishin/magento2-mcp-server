@@ -160,6 +160,8 @@ class GetLowStockProducts implements ToolInterface
 
     /**
      * Validates the optional "threshold" argument.
+     *
+     * @param array $arguments Raw MCP tool call arguments.
      */
     private function thresholdArgument(array $arguments): float
     {
@@ -175,6 +177,8 @@ class GetLowStockProducts implements ToolInterface
 
     /**
      * Validates the optional "limit" argument.
+     *
+     * @param array $arguments Raw MCP tool call arguments.
      */
     private function limitArgument(array $arguments): int
     {

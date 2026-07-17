@@ -119,6 +119,8 @@ class CreateCmsBlock implements WriteToolInterface
 
     /**
      * Rejects the call if any block (in any store scope) already uses the identifier.
+     *
+     * @param string $identifier CMS block identifier to check.
      */
     private function assertIdentifierIsFree(string $identifier): void
     {
@@ -135,6 +137,8 @@ class CreateCmsBlock implements WriteToolInterface
 
     /**
      * Validates the "identifier" argument: format and length.
+     *
+     * @param array $arguments Raw MCP tool call arguments.
      */
     private function identifierArgument(array $arguments): string
     {
@@ -157,6 +161,9 @@ class CreateCmsBlock implements WriteToolInterface
 
     /**
      * Validates a required (or explicitly provided optional) string argument.
+     *
+     * @param array $arguments Raw MCP tool call arguments.
+     * @param string $name Argument name to read and validate.
      */
     private function requiredStringArgument(array $arguments, string $name): string
     {
@@ -172,6 +179,9 @@ class CreateCmsBlock implements WriteToolInterface
 
     /**
      * Validates an optional boolean argument.
+     *
+     * @param array $arguments Raw MCP tool call arguments.
+     * @param string $name Argument name to read and validate.
      */
     private function booleanArgument(array $arguments, string $name): ?bool
     {

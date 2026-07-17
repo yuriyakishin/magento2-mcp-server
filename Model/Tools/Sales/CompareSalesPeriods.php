@@ -108,6 +108,8 @@ class CompareSalesPeriods implements ToolInterface
      * revenue/AOV (canceled orders counted but excluded from revenue) — same rules as
      * sales_summary so the numbers of the two tools always agree.
      *
+     * @param string $from Period start date/time (inclusive).
+     * @param string|null $to Period end date/time (inclusive), or null for no upper bound.
      * @return array<string, mixed>
      */
     private function summarizePeriod(string $from, ?string $to): array
@@ -158,6 +160,8 @@ class CompareSalesPeriods implements ToolInterface
      * Percentage deltas from period A to period B. A percentage is null when the period A
      * base is zero (no meaningful percent of nothing).
      *
+     * @param array $periodA Earlier period's summarizePeriod() result.
+     * @param array $periodB Later period's summarizePeriod() result.
      * @return array<string, mixed>
      */
     private function changes(array $periodA, array $periodB): array
@@ -185,6 +189,9 @@ class CompareSalesPeriods implements ToolInterface
 
     /**
      * Percentage change from $a to $b, rounded to one decimal; null when $a is zero.
+     *
+     * @param float $a Baseline value (period A).
+     * @param float $b Comparison value (period B).
      */
     private function pct(float $a, float $b): ?float
     {

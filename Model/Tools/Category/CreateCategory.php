@@ -131,6 +131,9 @@ class CreateCategory implements WriteToolInterface
     /**
      * Rejects a same-name sibling: Magento itself allows duplicate names, but for an
      * AI-driven tool a hard failure is safer than silently piling up copies.
+     *
+     * @param string $name Candidate category name.
+     * @param int $parentId Parent category id to check siblings under.
      */
     private function assertNoDuplicate(string $name, int $parentId): void
     {

@@ -164,6 +164,7 @@ class CreateProduct implements WriteToolInterface
     /**
      * Validates and returns the three required arguments.
      *
+     * @param array $arguments Raw MCP tool call arguments.
      * @return array{0: string, 1: string, 2: float} sku, name, price.
      */
     private function requireBaseArguments(array $arguments): array
@@ -193,6 +194,10 @@ class CreateProduct implements WriteToolInterface
 
     /**
      * Returns a non-negative float argument or its default.
+     *
+     * @param array $arguments Raw MCP tool call arguments.
+     * @param string $key Argument name to read and validate.
+     * @param float $default Value used when the argument is absent.
      */
     private function floatArgument(array $arguments, string $key, float $default): float
     {
@@ -209,6 +214,8 @@ class CreateProduct implements WriteToolInterface
     /**
      * Maps the optional "status" argument to a catalog status id, defaulting to disabled
      * so newly created products never reach the storefront without human review.
+     *
+     * @param array $arguments Raw MCP tool call arguments.
      */
     private function statusArgument(array $arguments): int
     {
@@ -224,6 +231,7 @@ class CreateProduct implements WriteToolInterface
      * Validates the optional category_ids argument and confirms every category exists
      * before the product is created, so a bad ID can't leave a half-assigned product.
      *
+     * @param array $arguments Raw MCP tool call arguments.
      * @return int[]
      */
     private function categoryIdsArgument(array $arguments): array
@@ -253,6 +261,7 @@ class CreateProduct implements WriteToolInterface
     }
 
     /**
+     * @param string $sku SKU to check.
      * @throws \RuntimeException if a product with this SKU already exists — creation never
      *     silently updates an existing product.
      */

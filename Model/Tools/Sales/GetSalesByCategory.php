@@ -113,6 +113,8 @@ class GetSalesByCategory implements ToolInterface
     /**
      * Aggregates the period's top-level order items per product id.
      *
+     * @param string $createdFrom Period start date/time (inclusive).
+     * @param string|null $createdTo Period end date/time (inclusive), or null for no upper bound.
      * @return array{0: array<int, array{qty: float, revenue: float}>, 1: bool}
      */
     private function aggregateItems(string $createdFrom, ?string $createdTo): array
@@ -143,7 +145,7 @@ class GetSalesByCategory implements ToolInterface
      * Maps per-product totals onto current category assignments and resolves category
      * names. Products with no resolvable category land in "(no category)".
      *
-     * @param array<int, array{qty: float, revenue: float}> $perProduct
+     * @param array $perProduct Per-product qty/revenue totals keyed by product id, from aggregateItems().
      * @return array<int, array{category_id: int|null, name: string, revenue: float, qty: float, products: int}>
      */
     private function groupByCategory(array $perProduct): array
@@ -247,6 +249,8 @@ class GetSalesByCategory implements ToolInterface
 
     /**
      * Validates the optional "limit" argument.
+     *
+     * @param array $arguments Raw MCP tool call arguments.
      */
     private function limitArgument(array $arguments): int
     {

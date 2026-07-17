@@ -26,6 +26,7 @@ class AdminTokenValidator
     }
 
     /**
+     * @param string $bearerToken Raw access token value from the Authorization header.
      * @throws UnauthorizedException if the token is unknown, revoked, or expired.
      */
     public function validate(string $bearerToken): AdminContext
@@ -58,6 +59,7 @@ class AdminTokenValidator
      * admin user it returns an empty list. Resolve the user's role, then read the rules
      * from its parent group role instead.
      *
+     * @param int $adminId Magento admin user id.
      * @return string[]
      */
     private function resolveAllowedResources(int $adminId): array

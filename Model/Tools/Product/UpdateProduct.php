@@ -154,6 +154,9 @@ class UpdateProduct implements WriteToolInterface
     /**
      * Reads the value a field has before the update, normalized the same way the
      * response reports the new value.
+     *
+     * @param \Magento\Catalog\Api\Data\ProductInterface $product Product being updated.
+     * @param string $field Field name to read.
      */
     private function currentValue(\Magento\Catalog\Api\Data\ProductInterface $product, string $field): mixed
     {
@@ -170,6 +173,10 @@ class UpdateProduct implements WriteToolInterface
 
     /**
      * Writes one validated field onto the loaded product model.
+     *
+     * @param \Magento\Catalog\Api\Data\ProductInterface $product Product being updated.
+     * @param string $field Field name to write.
+     * @param mixed $value Validated value to write.
      */
     private function applyField(\Magento\Catalog\Api\Data\ProductInterface $product, string $field, mixed $value): void
     {
@@ -187,6 +194,8 @@ class UpdateProduct implements WriteToolInterface
 
     /**
      * Validates the required "sku" argument.
+     *
+     * @param array $arguments Raw MCP tool call arguments.
      */
     private function skuArgument(array $arguments): string
     {
@@ -202,6 +211,7 @@ class UpdateProduct implements WriteToolInterface
      * Validates every provided editable field and returns the map of fields to apply.
      * Throws when no editable field is provided at all.
      *
+     * @param array $arguments Raw MCP tool call arguments.
      * @return array<string, mixed>
      */
     private function fieldArguments(array $arguments): array

@@ -35,6 +35,8 @@ class Register implements HttpPostActionInterface, CsrfAwareActionInterface
     /**
      * Never raises a CSRF exception — this is a stateless JSON API for OAuth clients,
      * not a form submission.
+     *
+     * @param RequestInterface $request Current HTTP request.
      */
     public function createCsrfValidationException(RequestInterface $request): ?InvalidRequestException
     {
@@ -43,6 +45,8 @@ class Register implements HttpPostActionInterface, CsrfAwareActionInterface
 
     /**
      * Always reports the request as CSRF-valid — see createCsrfValidationException().
+     *
+     * @param RequestInterface $request Current HTTP request.
      */
     public function validateForCsrf(RequestInterface $request): ?bool
     {
@@ -97,6 +101,9 @@ class Register implements HttpPostActionInterface, CsrfAwareActionInterface
 
     /**
      * Builds a standard RFC 7591 registration error response body.
+     *
+     * @param string $error RFC 7591 error code (e.g. "invalid_client_metadata").
+     * @param string $description Human-readable error description.
      */
     private function registrationError(string $error, string $description): Json
     {
@@ -108,6 +115,7 @@ class Register implements HttpPostActionInterface, CsrfAwareActionInterface
 
     /**
      * @param array $data Response body to encode as JSON.
+     * @param int $httpCode HTTP status code to set on the response.
      */
     private function jsonResult(array $data, int $httpCode): Json
     {

@@ -32,6 +32,8 @@ class TfaChallenge
 
     /**
      * Issues a new challenge token for an admin who just passed the password step.
+     *
+     * @param int $adminUserId Admin user id who passed the password step.
      */
     public function issue(int $adminUserId): string
     {
@@ -44,6 +46,7 @@ class TfaChallenge
     /**
      * Resolves a challenge token back to the admin user id it was issued for.
      *
+     * @param string $token Challenge token to resolve.
      * @return int|null null when the token is unknown, expired, or exhausted its attempts
      */
     public function getAdminUserId(string $token): ?int
@@ -55,6 +58,8 @@ class TfaChallenge
 
     /**
      * Records a wrong-code attempt; the token is invalidated once MAX_ATTEMPTS is reached.
+     *
+     * @param string $token Challenge token that received a wrong code.
      */
     public function registerFailure(string $token): void
     {
@@ -75,6 +80,8 @@ class TfaChallenge
 
     /**
      * Consumes the token after a successful code verification — it can't be used again.
+     *
+     * @param string $token Challenge token to consume.
      */
     public function redeem(string $token): void
     {
@@ -84,6 +91,7 @@ class TfaChallenge
     /**
      * Loads and validates the stored challenge payload for a token.
      *
+     * @param string $token Challenge token to load.
      * @return array{admin_user_id: int, failures: int}|null
      */
     private function load(string $token): ?array
@@ -108,7 +116,8 @@ class TfaChallenge
     /**
      * Persists the challenge payload under the token's cache key.
      *
-     * @param array{admin_user_id: int, failures: int} $data
+     * @param string $token Challenge token to persist under.
+     * @param array $data Challenge payload (admin_user_id, failures).
      */
     private function save(string $token, array $data): void
     {
@@ -122,6 +131,8 @@ class TfaChallenge
 
     /**
      * Cache key for a challenge token.
+     *
+     * @param string $token Challenge token.
      */
     private function cacheId(string $token): string
     {

@@ -25,6 +25,8 @@ class PromptRegistry
 
     /**
      * Checks whether a prompt with the given name is registered.
+     *
+     * @param string $name Prompt name to look up.
      */
     public function has(string $name): bool
     {
@@ -34,6 +36,7 @@ class PromptRegistry
     /**
      * Looks up a registered prompt by name.
      *
+     * @param string $name Prompt name to look up.
      * @throws McpException if no prompt is registered under that name.
      */
     public function get(string $name): PromptInterface

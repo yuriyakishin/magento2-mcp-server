@@ -42,6 +42,8 @@ class Token implements HttpPostActionInterface, CsrfAwareActionInterface
     /**
      * Never raises a CSRF exception — see the class-level note on why this endpoint is
      * exempt from form-key validation.
+     *
+     * @param RequestInterface $request Current HTTP request.
      */
     public function createCsrfValidationException(RequestInterface $request): ?InvalidRequestException
     {
@@ -50,6 +52,8 @@ class Token implements HttpPostActionInterface, CsrfAwareActionInterface
 
     /**
      * Always reports the request as CSRF-valid — see createCsrfValidationException().
+     *
+     * @param RequestInterface $request Current HTTP request.
      */
     public function validateForCsrf(RequestInterface $request): ?bool
     {
@@ -147,6 +151,9 @@ class Token implements HttpPostActionInterface, CsrfAwareActionInterface
 
     /**
      * Persists a new access/refresh token pair and renders the OAuth token response.
+     *
+     * @param int $adminUserId Admin user id the token pair is bound to.
+     * @param string $clientId OAuth client id the token pair is issued for.
      */
     private function issueTokenPair(int $adminUserId, string $clientId): Json
     {
@@ -170,6 +177,9 @@ class Token implements HttpPostActionInterface, CsrfAwareActionInterface
 
     /**
      * Builds a standard OAuth error response body.
+     *
+     * @param string $error OAuth error code (e.g. "invalid_grant").
+     * @param string $description Human-readable error description.
      */
     private function oauthError(string $error, string $description): Json
     {
@@ -181,6 +191,7 @@ class Token implements HttpPostActionInterface, CsrfAwareActionInterface
 
     /**
      * @param array $data Response body to encode as JSON.
+     * @param int $httpCode HTTP status code to set on the response.
      */
     private function jsonResult(array $data, int $httpCode): Json
     {

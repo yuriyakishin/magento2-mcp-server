@@ -17,6 +17,7 @@ class AdminContext
     private const ROOT_RESOURCE = 'Magento_Backend::all';
 
     /**
+     * @param int $adminId
      * @param string[] $allowedAclResources
      */
     public function __construct(
@@ -43,6 +44,8 @@ class AdminContext
 
     /**
      * Whether this admin's ACL rights include the given resource.
+     *
+     * @param string $resource ACL resource id to check (e.g. "Magento_Sales::sales").
      */
     public function hasAclResource(string $resource): bool
     {
