@@ -1,16 +1,35 @@
-# Magento MCP Server
+# Magento 2 MCP Server
 
 [![Packagist Version](https://img.shields.io/packagist/v/yu-dev/module-mcp-server)](https://packagist.org/packages/yu-dev/module-mcp-server)
 [![PHP Version](https://img.shields.io/packagist/dependency-v/yu-dev/module-mcp-server/php?label=php)](https://packagist.org/packages/yu-dev/module-mcp-server)
 ![Magento](https://img.shields.io/badge/magento-2.4.4%2B-orange)
 [![License](https://img.shields.io/packagist/l/yu-dev/module-mcp-server)](https://github.com/yuriyakishin/magento2-mcp-server/blob/main/LICENSE)
 
-An [MCP (Model Context Protocol)](https://modelcontextprotocol.io/) server implemented as
-a Magento 2 module. It exposes store operations as typed, access-controlled MCP tools over
-the Streamable HTTP transport, so MCP clients (claude.ai Connectors, Claude Desktop, etc.)
-can read and manage the store from a chat session.
+Connect an AI assistant — Claude or any other [MCP](https://modelcontextprotocol.io/)
+compatible client — directly to your Magento 2 store. It can answer questions about your
+catalog, orders, customers, and sales, and, if you grant the necessary permissions, make
+changes on your behalf — all through a normal chat conversation.
 
-<!-- TODO: demo video / screenshots -->
+Under the hood, this is an MCP (Model Context Protocol) server implemented as a Magento 2
+module. MCP is an open standard that allows AI assistants to interact with external systems
+through well-defined "tools" — APIs designed specifically for AI clients to discover and use.
+
+The module provides 40+ tools covering product search, order management, sales analytics,
+CMS content, customer data, and more. Each tool is protected by Magento ACL permissions,
+ensuring that the AI assistant can only access and modify data the logged-in administrator
+is authorized to use.
+
+There are no API keys to copy or manage. Authentication works much like logging into the
+Magento Admin Panel: the user is redirected to the standard Magento login flow, including
+2FA when enabled. Once authenticated, the AI assistant operates with the same permissions
+as that administrator.
+
+## Demo video
+
+[![MCP Server demo video](https://img.youtube.com/vi/dlniqgmraqM/maxresdefault.jpg)](https://www.youtube.com/watch?v=dlniqgmraqM)
+
+Connecting an AI assistant to a Magento store with **OAuth 2.1 and PKCE**, followed by a
+live walkthrough of several MCP tools.
 
 ## What the AI can do with it
 
