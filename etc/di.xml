@@ -25,6 +25,7 @@
                 <item name="restock_advisor" xsi:type="object">Yu\McpServer\Model\Prompts\Product\RestockAdvisor</item>
                 <item name="product_content_writer" xsi:type="object">Yu\McpServer\Model\Prompts\Product\ContentWriter</item>
                 <item name="review_moderate_queue" xsi:type="object">Yu\McpServer\Model\Prompts\Review\ModerateQueue</item>
+                <item name="review_negative_report" xsi:type="object">Yu\McpServer\Model\Prompts\Review\NegativeReport</item>
                 <item name="zero_result_rescue" xsi:type="object">Yu\McpServer\Model\Prompts\Search\ZeroResultRescue</item>
                 <item name="sales_dashboard" xsi:type="object">Yu\McpServer\Model\Prompts\Sales\SalesDashboard</item>
                 <item name="sales_trends" xsi:type="object">Yu\McpServer\Model\Prompts\Sales\SalesTrends</item>
