@@ -11,9 +11,12 @@ use Magento\Sales\Model\ResourceModel\Order\Payment\Collection as PaymentCollect
 use Magento\Sales\Model\ResourceModel\Order\Payment\CollectionFactory as PaymentCollectionFactory;
 use PHPUnit\Framework\TestCase;
 use Yu\McpServer\Model\Tools\Sales\GetPaymentMethodStats;
+use Yu\McpServer\Test\Unit\Model\StoreTimeMockTrait;
 
 class GetPaymentMethodStatsTest extends TestCase
 {
+    use StoreTimeMockTrait;
+
     /**
      * Payment usage is order data — the tool must require the Sales ACL resource.
      */
@@ -21,7 +24,8 @@ class GetPaymentMethodStatsTest extends TestCase
     {
         $tool = new GetPaymentMethodStats(
             $this->createMock(OrderCollectionFactory::class),
-            $this->createMock(PaymentCollectionFactory::class)
+            $this->createMock(PaymentCollectionFactory::class),
+            $this->storeTime()
         );
 
         $this->assertSame('Magento_Sales::sales', $tool->getRequiredAclResource());
@@ -37,7 +41,7 @@ class GetPaymentMethodStatsTest extends TestCase
         $orderFactory = $this->createMock(OrderCollectionFactory::class);
         $orderFactory->expects($this->never())->method('create');
 
-        $tool = new GetPaymentMethodStats($orderFactory, $this->createMock(PaymentCollectionFactory::class));
+        $tool = new GetPaymentMethodStats($orderFactory, $this->createMock(PaymentCollectionFactory::class), $this->storeTime());
 
         foreach ([[], ['created_from' => 'June']] as $arguments) {
             try {
@@ -87,7 +91,8 @@ class GetPaymentMethodStatsTest extends TestCase
 
         $tool = new GetPaymentMethodStats(
             $this->orderFactoryMock($orders),
-            $this->paymentFactoryMock($payments)
+            $this->paymentFactoryMock($payments),
+            $this->storeTime()
         );
 
         $result = $tool->execute(['created_from' => '2026-06-01']);
@@ -107,7 +112,7 @@ class GetPaymentMethodStatsTest extends TestCase
         $paymentFactory = $this->createMock(PaymentCollectionFactory::class);
         $paymentFactory->expects($this->never())->method('create');
 
-        $tool = new GetPaymentMethodStats($this->orderFactoryMock([]), $paymentFactory);
+        $tool = new GetPaymentMethodStats($this->orderFactoryMock([]), $paymentFactory, $this->storeTime());
 
         $result = $tool->execute(['created_from' => '2026-06-01']);
 

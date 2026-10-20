@@ -84,7 +84,7 @@ class ProductPerformance implements PromptInterface
 Analyse product performance for the period: {$period}, focusing on the top {$top}
 product(s) per ranking.
 
-1. Resolve the period into concrete UTC dates first (e.g. "last 30 days" = the 30 full
+1. Resolve the period into concrete store-local dates first (e.g. "last 30 days" = the 30 full
    calendar days ending yesterday inclusive).
 2. Top sellers — call sales_bestsellers for the period twice: once with sort_by
    "revenue" and once with sort_by "qty", limit {$top} each. Merge the two lists into

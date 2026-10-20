@@ -12,10 +12,14 @@ use Magento\Catalog\Model\ResourceModel\Product\Collection;
 use Magento\Catalog\Model\ResourceModel\Product\CollectionFactory;
 use Magento\Framework\Exception\NoSuchEntityException;
 use PHPUnit\Framework\TestCase;
+use Yu\McpServer\Model\Auth\AdminContext;
 use Yu\McpServer\Model\Tools\Category\GetCategoryProducts;
+use Yu\McpServer\Test\Unit\Model\Tools\Catalog\StorefrontScopeMockTrait;
 
 class GetCategoryProductsTest extends TestCase
 {
+    use StorefrontScopeMockTrait;
+
     /**
      * category_products is a public tool and must not require an ACL resource.
      */
@@ -23,7 +27,8 @@ class GetCategoryProductsTest extends TestCase
     {
         $tool = new GetCategoryProducts(
             $this->createMock(CategoryRepositoryInterface::class),
-            $this->createMock(CollectionFactory::class)
+            $this->createMock(CollectionFactory::class),
+            $this->storefrontScope()
         );
 
         $this->assertNull($tool->getRequiredAclResource());
@@ -37,7 +42,8 @@ class GetCategoryProductsTest extends TestCase
     {
         $tool = new GetCategoryProducts(
             $this->createMock(CategoryRepositoryInterface::class),
-            $this->createMock(CollectionFactory::class)
+            $this->createMock(CollectionFactory::class),
+            $this->storefrontScope()
         );
 
         foreach ([[], ['category_id' => 0], ['category_id' => 'shoes'], ['category_id' => 3, 'limit' => 0]] as $arguments) {
@@ -62,7 +68,8 @@ class GetCategoryProductsTest extends TestCase
 
         $tool = new GetCategoryProducts(
             $categoryRepository,
-            $this->createMock(CollectionFactory::class)
+            $this->createMock(CollectionFactory::class),
+            $this->storefrontScope()
         );
 
         $this->expectException(\RuntimeException::class);
@@ -76,8 +83,7 @@ class GetCategoryProductsTest extends TestCase
      */
     public function testReturnsCategoryProducts(): void
     {
-        $category = $this->createMock(CategoryInterface::class);
-        $category->method('getName')->willReturn('Shoes');
+        $category = $this->categoryMock('Shoes', true, '1/2/3');
         $categoryRepository = $this->createMock(CategoryRepositoryInterface::class);
         $categoryRepository->method('get')->with(3)->willReturn($category);
 
@@ -96,7 +102,7 @@ class GetCategoryProductsTest extends TestCase
         $collectionFactory = $this->createMock(CollectionFactory::class);
         $collectionFactory->method('create')->willReturn($collection);
 
-        $tool = new GetCategoryProducts($categoryRepository, $collectionFactory);
+        $tool = new GetCategoryProducts($categoryRepository, $collectionFactory, $this->storefrontScope());
 
         $result = $tool->execute(['category_id' => 3]);
 
@@ -113,8 +119,7 @@ class GetCategoryProductsTest extends TestCase
      */
     public function testReturnsEmptyListForEmptyCategory(): void
     {
-        $category = $this->createMock(CategoryInterface::class);
-        $category->method('getName')->willReturn('Empty');
+        $category = $this->categoryMock('Empty', true, '1/2/5');
         $categoryRepository = $this->createMock(CategoryRepositoryInterface::class);
         $categoryRepository->method('get')->willReturn($category);
 
@@ -126,11 +131,74 @@ class GetCategoryProductsTest extends TestCase
         $collectionFactory = $this->createMock(CollectionFactory::class);
         $collectionFactory->method('create')->willReturn($collection);
 
-        $tool = new GetCategoryProducts($categoryRepository, $collectionFactory);
+        $tool = new GetCategoryProducts($categoryRepository, $collectionFactory, $this->storefrontScope());
 
         $result = $tool->execute(['category_id' => 5]);
 
         $this->assertSame([], $result['products']);
         $this->assertSame(0, $result['count']);
+    }
+
+    /**
+     * The customer view: an inactive category, or one from another store's tree, is
+     * reported exactly like an unknown id — and no products are loaded for it.
+     */
+    public function testAnonymousCallerSeesHiddenCategoryAsMissing(): void
+    {
+        foreach ([[false, '1/2/7'], [true, '1/9/7']] as [$isActive, $path]) {
+            $categoryRepository = $this->createMock(CategoryRepositoryInterface::class);
+            $categoryRepository->method('get')->willReturn($this->categoryMock('Hidden', $isActive, $path));
+            $collectionFactory = $this->createMock(CollectionFactory::class);
+            $collectionFactory->expects($this->never())->method('create');
+
+            $tool = new GetCategoryProducts($categoryRepository, $collectionFactory, $this->storefrontScope());
+
+            try {
+                $tool->execute(['category_id' => 7]);
+                $this->fail('Expected RuntimeException for path ' . $path);
+            } catch (\RuntimeException $e) {
+                $this->assertSame('Category with ID 7 does not exist.', $e->getMessage());
+            }
+        }
+    }
+
+    /**
+     * The admin view: an inactive category is listed, without storefront product filters.
+     */
+    public function testAdminSeesInactiveCategory(): void
+    {
+        $categoryRepository = $this->createMock(CategoryRepositoryInterface::class);
+        $categoryRepository->method('get')->willReturn($this->categoryMock('Draft', false, '1/2/7'));
+
+        $collection = $this->createMock(Collection::class);
+        $collection->method('addAttributeToSelect')->willReturnSelf();
+        $collection->expects($this->never())->method('addWebsiteFilter');
+        $collection->method('setPageSize')->willReturnSelf();
+        $collection->method('getIterator')->willReturn(new \ArrayIterator([]));
+        $collectionFactory = $this->createMock(CollectionFactory::class);
+        $collectionFactory->method('create')->willReturn($collection);
+
+        $tool = new GetCategoryProducts($categoryRepository, $collectionFactory, $this->storefrontScope());
+        $result = $tool->executeWithContext(
+            ['category_id' => 7],
+            new AdminContext(1, ['Magento_Catalog::products'])
+        );
+
+        $this->assertSame('Draft', $result['category']['name']);
+    }
+
+    /**
+     * @param string $name Category name.
+     * @param bool $isActive Category active flag.
+     * @param string $path Category path.
+     */
+    private function categoryMock(string $name, bool $isActive, string $path): CategoryInterface
+    {
+        $category = $this->createMock(CategoryInterface::class);
+        $category->method('getName')->willReturn($name);
+        $category->method('getIsActive')->willReturn($isActive);
+        $category->method('getPath')->willReturn($path);
+
+        return $category;
     }
 }

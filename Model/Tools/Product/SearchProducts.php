@@ -8,19 +8,22 @@ use Magento\Catalog\Model\Product\Attribute\Source\Status;
 use Magento\Catalog\Model\ResourceModel\Product\CollectionFactory;
 use Yu\McpServer\Model\Auth\AdminContext;
 use Yu\McpServer\Model\ContextAwareToolInterface;
+use Yu\McpServer\Model\Tools\Catalog\StorefrontScope;
 
 /**
- * Two storefronts (see ContextAwareToolInterface): anonymous callers search enabled
- * products only — exactly what a customer sees; an admin with the catalog ACL also finds
- * disabled products, each row carrying its status so the assistant can tell them apart.
+ * Two storefronts (see ContextAwareToolInterface): anonymous callers find exactly what the
+ * storefront search shows a customer (see StorefrontScope); an admin with the catalog ACL
+ * finds every product, each row carrying its status so the assistant can tell them apart.
  */
 class SearchProducts implements ContextAwareToolInterface
 {
     private const DEFAULT_LIMIT = 10;
     private const MAX_LIMIT = 50;
 
-    public function __construct(private readonly CollectionFactory $productCollectionFactory)
-    {
+    public function __construct(
+        private readonly CollectionFactory $productCollectionFactory,
+        private readonly StorefrontScope $storefrontScope
+    ) {
     }
 
     /**
@@ -37,9 +40,10 @@ class SearchProducts implements ContextAwareToolInterface
     public function getDescription(): string
     {
         return 'Searches storefront products by name or SKU and returns basic product data. '
-            . 'Anonymous callers see enabled products only (the customer view); an '
-            . 'authenticated admin with catalog permission also finds disabled products, '
-            . 'marked with their status.';
+            . 'Anonymous callers find what the storefront search shows a customer of this '
+            . 'store (enabled, assigned to this website, visible in search); an '
+            . 'authenticated admin with catalog permission finds every product, marked with '
+            . 'its status.';
     }
 
     /**
@@ -105,7 +109,7 @@ class SearchProducts implements ContextAwareToolInterface
             ['attribute' => 'sku', 'like' => '%' . $query . '%'],
         ]);
         if (!$adminView) {
-            $collection->addAttributeToFilter('status', Status::STATUS_ENABLED);
+            $this->storefrontScope->filterProductCollection($collection, StorefrontScope::VISIBLE_IN_SEARCH);
         }
         $collection->setPageSize($limit);
 

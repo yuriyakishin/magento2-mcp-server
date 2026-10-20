@@ -7,13 +7,15 @@ namespace Yu\McpServer\Model\Tools\Cms;
 use Magento\Cms\Api\GetPageByIdentifierInterface;
 use Magento\Framework\Exception\NoSuchEntityException;
 use Magento\Store\Model\StoreManagerInterface;
+use Yu\McpServer\Model\StoreTime;
 use Yu\McpServer\Model\ToolInterface;
 
 class GetCmsPage implements ToolInterface
 {
     public function __construct(
         private readonly GetPageByIdentifierInterface $getPageByIdentifier,
-        private readonly StoreManagerInterface $storeManager
+        private readonly StoreManagerInterface $storeManager,
+        private readonly StoreTime $storeTime
     ) {
     }
 
@@ -93,7 +95,7 @@ class GetCmsPage implements ToolInterface
                 'content' => $page->getContent(),
                 'meta_description' => $page->getMetaDescription(),
                 'url' => $store->getBaseUrl() . $page->getIdentifier(),
-                'updated_at' => $page->getUpdateTime(),
+                'updated_at' => $this->storeTime->toLocal($page->getUpdateTime()),
             ],
         ];
     }

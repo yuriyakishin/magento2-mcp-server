@@ -17,9 +17,9 @@ class Token extends AbstractDb
     }
 
     /**
-     * Looks up a row id by its access token value.
+     * Looks up a row id by its stored access token digest.
      *
-     * @param string $accessToken Access token value to look up.
+     * @param string $accessToken SHA-256 digest of the access token.
      */
     public function getIdByAccessToken(string $accessToken): ?int
     {
@@ -27,13 +27,34 @@ class Token extends AbstractDb
     }
 
     /**
-     * Looks up a row id by its refresh token value.
+     * Looks up a row id by its stored refresh token digest.
      *
-     * @param string $refreshToken Refresh token value to look up.
+     * @param string $refreshToken SHA-256 digest of the refresh token.
      */
     public function getIdByRefreshToken(string $refreshToken): ?int
     {
         return $this->getIdByColumn('refresh_token', $refreshToken);
+    }
+
+    /**
+     * Revokes every not-yet-revoked token pair of the given admin user.
+     *
+     * @param int $adminUserId Admin user whose tokens to revoke.
+     * @param string $revokedAt GMT timestamp ("Y-m-d H:i:s") to record as the revocation time.
+     * @return int Number of revoked token pairs.
+     */
+    public function revokeAllForAdmin(int $adminUserId, string $revokedAt): int
+    {
+        $connection = $this->getConnection();
+
+        return $connection->update(
+            $this->getMainTable(),
+            ['revoked_at' => $revokedAt],
+            [
+                'admin_user_id = ?' => $adminUserId,
+                'revoked_at IS NULL',
+            ]
+        );
     }
 
     /**

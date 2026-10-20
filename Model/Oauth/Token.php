@@ -20,6 +20,9 @@ use Yu\McpServer\Model\ResourceModel\Oauth\Token as TokenResource;
  * @method $this setAdminUserId(int $adminUserId)
  * @method string getExpiresAt()
  * @method $this setExpiresAt(string $expiresAt)
+ * @method string|null getRefreshExpiresAt()
+ * @method $this setRefreshExpiresAt(?string $refreshExpiresAt)
+ * @method string|null getCreatedAt()
  * @method string|null getRevokedAt()
  * @method $this setRevokedAt(?string $revokedAt)
  */

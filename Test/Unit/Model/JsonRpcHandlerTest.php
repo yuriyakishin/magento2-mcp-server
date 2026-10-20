@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 namespace Yu\McpServer\Test\Unit\Model;
 
+use Magento\Framework\Exception\LocalizedException;
 use PHPUnit\Framework\TestCase;
 use Psr\Log\LoggerInterface;
 use Yu\McpServer\Exception\UnauthorizedException;
@@ -13,6 +14,7 @@ use Yu\McpServer\Model\ContextAwareToolInterface;
 use Yu\McpServer\Model\JsonRpcHandler;
 use Yu\McpServer\Model\PromptInterface;
 use Yu\McpServer\Model\PromptRegistry;
+use Yu\McpServer\Model\ServerVersion;
 use Yu\McpServer\Model\ToolInterface;
 use Yu\McpServer\Model\ToolRegistry;
 use Yu\McpServer\Model\WriteToolInterface;
@@ -26,17 +28,21 @@ class JsonRpcHandlerTest extends TestCase
         ToolRegistry $registry,
         bool $writeToolsEnabled = false,
         ?PromptRegistry $promptRegistry = null,
-        bool $publicToolsEnabled = true
+        bool $publicToolsEnabled = true,
+        string $serverVersion = '1.2.0'
     ): JsonRpcHandler {
         $config = $this->createMock(Config::class);
         $config->method('isWriteToolsEnabled')->willReturn($writeToolsEnabled);
         $config->method('isPublicToolsEnabled')->willReturn($publicToolsEnabled);
+        $version = $this->createMock(ServerVersion::class);
+        $version->method('get')->willReturn($serverVersion);
 
         return new JsonRpcHandler(
             $registry,
             $config,
             $this->createMock(LoggerInterface::class),
-            $promptRegistry ?? new PromptRegistry()
+            $promptRegistry ?? new PromptRegistry(),
+            $version
         );
     }
 
@@ -104,6 +110,18 @@ class JsonRpcHandlerTest extends TestCase
     }
 
     /**
+     * serverInfo.version reports the installed module version, not a fixed string.
+     */
+    public function testInitializeReportsInstalledServerVersion(): void
+    {
+        $handler = $this->makeHandler(new ToolRegistry([]), serverVersion: '1.4.2');
+
+        $result = $handler->handle(['jsonrpc' => '2.0', 'id' => 1, 'method' => 'initialize']);
+
+        $this->assertSame('1.4.2', $result['result']['serverInfo']['version']);
+    }
+
+    /**
      * A message with no "id" field is a notification and must get no response body.
      */
     public function testNotificationReturnsNoResponse(): void
@@ -151,6 +169,75 @@ class JsonRpcHandlerTest extends TestCase
         $this->assertArrayNotHasKey('error', $result);
         $this->assertTrue($result['result']['isError']);
         $this->assertSame('Something went wrong.', $result['result']['content'][0]['text']);
+    }
+
+    /**
+     * Internal exceptions — including RuntimeException subclasses such as PDOException,
+     * which carry SQL — must not reach the client; it gets a generic message with a log
+     * reference instead.
+     */
+    public function testInternalExceptionMessageIsHiddenFromClient(): void
+    {
+        foreach ([
+            new \PDOException('SQLSTATE[42S02]: Table \'shop.secret_table\' does not exist'),
+            new \TypeError('Argument #1 must be of type string, /var/www/app/code/X.php'),
+        ] as $exception) {
+            $text = $this->callFailingTool($exception, null);
+
+            $this->assertStringNotContainsString('secret_table', $text);
+            $this->assertStringNotContainsString('/var/www', $text);
+            $this->assertMatchesRegularExpression('/internal error \(reference [0-9a-f]{8}\)/', $text);
+        }
+    }
+
+    /**
+     * Magento business errors are shown to authenticated admins (they need them to fix a
+     * write request) but hidden from anonymous callers.
+     */
+    public function testLocalizedExceptionShownToAdminsOnly(): void
+    {
+        $exception = new LocalizedException(__('URL key for specified store already exists.'));
+
+        $this->assertSame(
+            'URL key for specified store already exists.',
+            $this->callFailingTool($exception, new AdminContext(1, ['Magento_Backend::all']))
+        );
+        $this->assertStringContainsString('internal error', $this->callFailingTool($exception, null));
+    }
+
+    /**
+     * Tool-authored InvalidArgumentException messages pass through unchanged.
+     */
+    public function testInvalidArgumentMessageIsShown(): void
+    {
+        $this->assertSame(
+            'Argument "sku" is required.',
+            $this->callFailingTool(new \InvalidArgumentException('Argument "sku" is required.'), null)
+        );
+    }
+
+    /**
+     * Calls a public tool that throws the given exception and returns the error text.
+     *
+     * @param \Throwable $exception Exception the tool throws.
+     * @param AdminContext|null $adminContext Caller identity.
+     */
+    private function callFailingTool(\Throwable $exception, ?AdminContext $adminContext): string
+    {
+        $tool = $this->createMock(ToolInterface::class);
+        $tool->method('getRequiredAclResource')->willReturn(null);
+        $tool->method('execute')->willThrowException($exception);
+
+        $result = $this->makeHandler(new ToolRegistry(['failing_tool' => $tool]))->handle([
+            'jsonrpc' => '2.0',
+            'id' => 3,
+            'method' => 'tools/call',
+            'params' => ['name' => 'failing_tool', 'arguments' => []],
+        ], $adminContext);
+
+        $this->assertTrue($result['result']['isError']);
+
+        return $result['result']['content'][0]['text'];
     }
 
     /**
@@ -609,5 +696,27 @@ class JsonRpcHandlerTest extends TestCase
                 'params' => ['name' => 'restricted_tool', 'arguments' => []],
             ],
         ], null);
+    }
+
+    /**
+     * Batch elements that are not request objects (numbers, strings, nested arrays, empty
+     * objects) each get an "Invalid Request" response; valid neighbours are still handled.
+     */
+    public function testHandleBatchAnswersNonObjectElementsWithInvalidRequest(): void
+    {
+        $handler = $this->makeHandler(new ToolRegistry([]));
+
+        $responses = $handler->handleBatch(
+            [1, 'x', [1, 2], [], ['jsonrpc' => '2.0', 'id' => 7, 'method' => 'ping']],
+            null
+        );
+
+        $this->assertCount(5, $responses);
+        foreach (array_slice($responses, 0, 4) as $response) {
+            $this->assertNull($response['id']);
+            $this->assertSame(-32600, $response['error']['code']);
+        }
+        $this->assertSame(7, $responses[4]['id']);
+        $this->assertArrayHasKey('result', $responses[4]);
     }
 }

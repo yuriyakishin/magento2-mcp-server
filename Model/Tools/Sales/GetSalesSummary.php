@@ -7,6 +7,7 @@ namespace Yu\McpServer\Model\Tools\Sales;
 use Magento\Sales\Model\Order;
 use Magento\Sales\Model\ResourceModel\Order\CollectionFactory as OrderCollectionFactory;
 use Magento\Sales\Model\ResourceModel\Order\Item\CollectionFactory as OrderItemCollectionFactory;
+use Yu\McpServer\Model\StoreTime;
 use Yu\McpServer\Model\ToolInterface;
 
 /**
@@ -29,7 +30,8 @@ class GetSalesSummary implements ToolInterface
 
     public function __construct(
         private readonly OrderCollectionFactory $orderCollectionFactory,
-        private readonly OrderItemCollectionFactory $orderItemCollectionFactory
+        private readonly OrderItemCollectionFactory $orderItemCollectionFactory,
+        private readonly StoreTime $storeTime
     ) {
     }
 
@@ -50,7 +52,8 @@ class GetSalesSummary implements ToolInterface
             . 'order value (per currency), a breakdown by order status and the best-selling '
             . 'products by quantity. Canceled orders are counted in the status breakdown but '
             . 'excluded from revenue and average order value; bestseller quantities are as '
-            . 'ordered (cancellations not subtracted). Dates are compared in UTC. Typical '
+            . 'ordered (cancellations not subtracted). Dates are in store local time '
+            . '(store_info reports the timezone). Typical '
             . 'use: "how were sales last week?", "compare June to May" (two calls).';
     }
 
@@ -64,12 +67,12 @@ class GetSalesSummary implements ToolInterface
             'properties' => [
                 'created_from' => [
                     'type' => 'string',
-                    'description' => 'Start of the period (inclusive), UTC, "YYYY-MM-DD" or '
+                    'description' => 'Start of the period (inclusive), store local time, "YYYY-MM-DD" or '
                         . '"YYYY-MM-DD HH:MM:SS".',
                 ],
                 'created_to' => [
                     'type' => 'string',
-                    'description' => 'End of the period (inclusive), UTC, "YYYY-MM-DD" '
+                    'description' => 'End of the period (inclusive), store local time, "YYYY-MM-DD" '
                         . '(whole day included) or "YYYY-MM-DD HH:MM:SS". Omit for "up to now".',
                 ],
                 'top_products' => [
@@ -108,7 +111,9 @@ class GetSalesSummary implements ToolInterface
             $createdTo .= ' 23:59:59';
         }
 
-        $summary = $this->summarizeOrders($createdFrom, $createdTo);
+        $utcFrom = $this->storeTime->toUtc($createdFrom);
+        $utcTo = $createdTo !== null ? $this->storeTime->toUtc($createdTo) : null;
+        $summary = $this->summarizeOrders($utcFrom, $utcTo);
         $result = [
             'period' => ['from' => $createdFrom, 'to' => $createdTo],
             'orders_total' => $summary['orders_total'],
@@ -119,7 +124,7 @@ class GetSalesSummary implements ToolInterface
             $result['truncated'] = true;
         }
         if ($topProducts > 0) {
-            $result['top_products'] = $this->bestsellers($createdFrom, $createdTo, $topProducts);
+            $result['top_products'] = $this->bestsellers($utcFrom, $utcTo, $topProducts);
         }
 
         return $result;

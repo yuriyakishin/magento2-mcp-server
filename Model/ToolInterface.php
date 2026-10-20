@@ -27,6 +27,11 @@ interface ToolInterface
     public function getRequiredAclResource(): ?string;
 
     /**
+     * Errors meant for the caller are thrown as exactly \InvalidArgumentException (bad
+     * arguments) or \RuntimeException (e.g. "not found") — only those two classes have
+     * their message shown to the client. Any other exception, subclasses included, is
+     * reported as an internal error with a log reference.
+     *
      * @param array $arguments Tool call arguments, already matching getInputSchema().
      * @return array Associative result data to be JSON-encoded into the tool response.
      */

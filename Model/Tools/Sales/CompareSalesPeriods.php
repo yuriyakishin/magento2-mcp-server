@@ -6,6 +6,7 @@ namespace Yu\McpServer\Model\Tools\Sales;
 
 use Magento\Sales\Model\Order;
 use Magento\Sales\Model\ResourceModel\Order\CollectionFactory as OrderCollectionFactory;
+use Yu\McpServer\Model\StoreTime;
 use Yu\McpServer\Model\ToolInterface;
 
 /**
@@ -19,7 +20,8 @@ class CompareSalesPeriods implements ToolInterface
     private const ORDER_SCAN_LIMIT = 5000;
 
     public function __construct(
-        private readonly OrderCollectionFactory $orderCollectionFactory
+        private readonly OrderCollectionFactory $orderCollectionFactory,
+        private readonly StoreTime $storeTime
     ) {
     }
 
@@ -39,7 +41,8 @@ class CompareSalesPeriods implements ToolInterface
         return 'Compares sales between two date ranges: order count, revenue and average '
             . 'order value (per currency) for each period, plus the percentage change from '
             . 'period A to period B. Canceled orders are excluded from revenue. Dates are '
-            . 'compared in UTC. Typical use: "compare June to May", "this week vs the same '
+            . 'in store local time '
+            . '(store_info reports the timezone). Typical use: "compare June to May", "this week vs the same '
             . 'week last year".';
     }
 
@@ -53,7 +56,7 @@ class CompareSalesPeriods implements ToolInterface
             'properties' => [
                 'period_a_from' => [
                     'type' => 'string',
-                    'description' => 'Start of the FIRST (earlier/baseline) period, UTC, '
+                    'description' => 'Start of the FIRST (earlier/baseline) period, store local time, '
                         . '"YYYY-MM-DD" or "YYYY-MM-DD HH:MM:SS".',
                 ],
                 'period_a_to' => [
@@ -93,8 +96,11 @@ class CompareSalesPeriods implements ToolInterface
         $bFrom = DateRange::requiredDate($arguments, 'period_b_from');
         $bTo = DateRange::optionalDate($arguments, 'period_b_to');
 
-        $periodA = $this->summarizePeriod($aFrom, $aTo);
-        $periodB = $this->summarizePeriod($bFrom, $bTo);
+        $periodA = $this->summarizePeriod($this->storeTime->toUtc($aFrom), $this->storeTime->toUtc($aTo));
+        $periodB = $this->summarizePeriod(
+            $this->storeTime->toUtc($bFrom),
+            $bTo !== null ? $this->storeTime->toUtc($bTo) : null
+        );
 
         return [
             'period_a' => ['from' => $aFrom, 'to' => $aTo] + $periodA,

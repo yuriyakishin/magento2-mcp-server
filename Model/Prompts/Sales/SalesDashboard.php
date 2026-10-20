@@ -66,7 +66,7 @@ class SalesDashboard implements PromptInterface
         $text = <<<PROMPT
 Build a sales analytics dashboard for the period: {$period}.
 
-Resolve the period into concrete UTC dates first (e.g. "last 30 days" = the 30 full
+Resolve the period into concrete store-local dates first (e.g. "last 30 days" = the 30 full
 calendar days ending yesterday inclusive). Then gather the data with the store's tools:
 
 1. Headline numbers — sales_summary for the whole period with top_products 5.

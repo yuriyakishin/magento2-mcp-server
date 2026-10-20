@@ -24,6 +24,21 @@
                     <comment>Logs the complete JSON-RPC request and response bodies to var/log/mcp.log at debug level. May include personal data (customer emails, order numbers, etc). Keep disabled in production; enable only temporarily while debugging a client connection.</comment>
                 </field>
             </group>
+            <group id="security" translate="label" type="text" sortOrder="20" showInDefault="1" showInWebsite="0" showInStore="0">
+                <label>Security</label>
+                <field id="client_ip_header" translate="label comment" type="text" sortOrder="10" showInDefault="1" showInWebsite="0" showInStore="0">
+                    <label>Client IP Header</label>
+                    <comment>Header with the real visitor IP when the store is behind a reverse proxy, CDN or tunnel (e.g. CF-Connecting-IP for Cloudflare, X-Forwarded-For for most proxies). Used for login and anonymous-request rate limiting. It is honored only for requests arriving from a Trusted Proxy below; leave empty to use the connection address.</comment>
+                </field>
+                <field id="trusted_proxies" translate="label comment" type="textarea" sortOrder="20" showInDefault="1" showInWebsite="0" showInStore="0">
+                    <label>Trusted Proxies</label>
+                    <comment>IP addresses or CIDR ranges of your own proxies, one per line or comma-separated (e.g. 127.0.0.1 for a local tunnel). Requests from any other address cannot set the client IP through the header.</comment>
+                </field>
+                <field id="allowed_redirect_hosts" translate="label comment" type="textarea" sortOrder="30" showInDefault="1" showInWebsite="0" showInStore="0">
+                    <label>Allowed OAuth Redirect Hosts</label>
+                    <comment>Hosts MCP clients may send authorization codes to, one per line or comma-separated (e.g. claude.ai). Applies to client registration and to every sign-in. Leave empty to allow any client.</comment>
+                </field>
+            </group>
         </section>
     </system>
 </config>

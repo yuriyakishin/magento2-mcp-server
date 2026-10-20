@@ -12,10 +12,13 @@ use Magento\Framework\UrlInterface;
 use Magento\Store\Model\StoreManagerInterface;
 use Yu\McpServer\Model\Auth\AdminContext;
 use Yu\McpServer\Model\ContextAwareToolInterface;
+use Yu\McpServer\Model\StoreTime;
+use Yu\McpServer\Model\Tools\Catalog\StorefrontScope;
 
 /**
- * Two storefronts (see ContextAwareToolInterface): for anonymous callers a disabled
- * product is reported as missing — the same answer a customer gets from the storefront,
+ * Two storefronts (see ContextAwareToolInterface): for anonymous callers a product without
+ * its own storefront page (disabled, not on this website, or not visible individually —
+ * see StorefrontScope) is reported as missing — the same answer a customer gets,
  * and deliberately the same message as a truly unknown SKU, so anonymity can't be used
  * to probe which SKUs exist. An admin with the catalog ACL gets the full card either way.
  */
@@ -30,7 +33,9 @@ class GetProductDetails implements ContextAwareToolInterface
 
     public function __construct(
         private readonly ProductRepositoryInterface $productRepository,
-        private readonly StoreManagerInterface $storeManager
+        private readonly StoreManagerInterface $storeManager,
+        private readonly StorefrontScope $storefrontScope,
+        private readonly StoreTime $storeTime
     ) {
     }
 
@@ -49,9 +54,10 @@ class GetProductDetails implements ContextAwareToolInterface
     {
         return 'Returns the full product card for one SKU: name, status, visibility, prices, '
             . 'descriptions, weight, category ids and image URLs. Use product_search first '
-            . 'if you only know a part of the name. For anonymous callers disabled products '
-            . 'are reported as missing (the customer view); an authenticated admin with '
-            . 'catalog permission sees them.';
+            . 'if you only know a part of the name. For anonymous callers products without '
+            . 'their own page on this storefront (disabled, other website, not visible '
+            . 'individually) are reported as missing (the customer view); an authenticated '
+            . 'admin with catalog permission sees them.';
     }
 
     /**
@@ -108,9 +114,11 @@ class GetProductDetails implements ContextAwareToolInterface
             throw new \RuntimeException(sprintf('Product with SKU "%s" does not exist.', trim($sku)));
         }
 
-        // A customer can't open a disabled product on the storefront, so anonymous callers
-        // get the exact same answer as for an unknown SKU — existence must not be probeable.
-        if (!$adminView && (int)$product->getStatus() !== Status::STATUS_ENABLED) {
+        // A customer can't open such a product on the storefront, so anonymous callers get
+        // the exact same answer as for an unknown SKU — existence must not be probeable.
+        if (!$adminView
+            && !$this->storefrontScope->isProductVisible($product, StorefrontScope::VISIBLE_INDIVIDUALLY)
+        ) {
             throw new \RuntimeException(sprintf('Product with SKU "%s" does not exist.', trim($sku)));
         }
 
@@ -129,8 +137,8 @@ class GetProductDetails implements ContextAwareToolInterface
                 'weight' => $product->getWeight(),
                 'category_ids' => array_map('intval', $product->getCategoryIds()),
                 'images' => $this->extractImages($product),
-                'created_at' => $product->getCreatedAt(),
-                'updated_at' => $product->getUpdatedAt(),
+                'created_at' => $this->storeTime->toLocal($product->getCreatedAt()),
+                'updated_at' => $this->storeTime->toLocal($product->getUpdatedAt()),
             ],
         ];
     }

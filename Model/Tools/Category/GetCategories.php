@@ -6,10 +6,18 @@ namespace Yu\McpServer\Model\Tools\Category;
 
 use Magento\Catalog\Model\ResourceModel\Category\CollectionFactory;
 use Magento\Store\Model\StoreManagerInterface;
-use Yu\McpServer\Model\ToolInterface;
+use Yu\McpServer\Model\Auth\AdminContext;
+use Yu\McpServer\Model\ContextAwareToolInterface;
 
-class GetCategories implements ToolInterface
+/**
+ * Two storefronts (see ContextAwareToolInterface): disabled categories are hidden from the
+ * storefront, so `include_inactive` is honored only for an admin with the category ACL;
+ * anonymous callers always get the active tree.
+ */
+class GetCategories implements ContextAwareToolInterface
 {
+    private const ADMIN_RESOURCE = 'Magento_Catalog::categories';
+
     public function __construct(
         private readonly CollectionFactory $categoryCollectionFactory,
         private readonly StoreManagerInterface $storeManager
@@ -31,7 +39,9 @@ class GetCategories implements ToolInterface
     {
         return 'Returns the store category tree as a flat list ordered by path: id, parent_id, '
             . 'name, level, url_key and active flag. Use the ids as parent_id for '
-            . 'category_create or category_ids context for products.';
+            . 'category_create or category_ids context for products. Disabled categories '
+            . 'are included only on request and only for an authenticated admin with '
+            . 'category permission.';
     }
 
     /**
@@ -44,7 +54,8 @@ class GetCategories implements ToolInterface
             'properties' => [
                 'include_inactive' => [
                     'type' => 'boolean',
-                    'description' => 'Also include disabled categories (default false).',
+                    'description' => 'Also include disabled categories (default false). '
+                        . 'Admin only; ignored for anonymous callers.',
                 ],
             ],
             'required' => [],
@@ -52,7 +63,8 @@ class GetCategories implements ToolInterface
     }
 
     /**
-     * Public storefront catalog structure — no ACL resource required.
+     * Public storefront catalog structure — no ACL resource required. The admin-only
+     * extras (disabled categories) are gated inside executeWithContext().
      */
     public function getRequiredAclResource(): ?string
     {
@@ -60,12 +72,24 @@ class GetCategories implements ToolInterface
     }
 
     /**
-     * @param array $arguments Optional `include_inactive` (bool, default false).
-     * @return array{root_category_id: int, categories: array<int, array<string, mixed>>, count: int}
+     * @inheritDoc
      */
     public function execute(array $arguments): array
     {
-        $includeInactive = (bool)($arguments['include_inactive'] ?? false);
+        return $this->executeWithContext($arguments, null);
+    }
+
+    /**
+     * @param array $arguments Optional `include_inactive` (bool, default false).
+     * @param AdminContext|null $adminContext The caller's resolved identity, or null for
+     *     an anonymous request (no bearer token was supplied).
+     * @return array{root_category_id: int, categories: array<int, array<string, mixed>>, count: int}
+     */
+    public function executeWithContext(array $arguments, ?AdminContext $adminContext): array
+    {
+        $includeInactive = (bool)($arguments['include_inactive'] ?? false)
+            && $adminContext !== null
+            && $adminContext->hasAclResource(self::ADMIN_RESOURCE);
         $rootCategoryId = (int)$this->storeManager->getStore()->getRootCategoryId();
 
         $collection = $this->categoryCollectionFactory->create();

@@ -12,9 +12,12 @@ use Magento\Quote\Model\ResourceModel\Quote\Item\Collection as QuoteItemCollecti
 use Magento\Quote\Model\ResourceModel\Quote\Item\CollectionFactory as QuoteItemCollectionFactory;
 use PHPUnit\Framework\TestCase;
 use Yu\McpServer\Model\Tools\Marketing\GetAbandonedCarts;
+use Yu\McpServer\Test\Unit\Model\StoreTimeMockTrait;
 
 class GetAbandonedCartsTest extends TestCase
 {
+    use StoreTimeMockTrait;
+
     /**
      * Customer contact data — the tool must require the Abandoned Carts report ACL
      * resource.
@@ -24,7 +27,8 @@ class GetAbandonedCartsTest extends TestCase
         $tool = new GetAbandonedCarts(
             $this->createMock(QuoteCollectionFactory::class),
             $this->createMock(QuoteItemCollectionFactory::class),
-            $this->createMock(DateTime::class)
+            $this->createMock(DateTime::class),
+            $this->storeTime()
         );
 
         $this->assertSame('Magento_Reports::abandoned', $tool->getRequiredAclResource());
@@ -42,7 +46,8 @@ class GetAbandonedCartsTest extends TestCase
         $tool = new GetAbandonedCarts(
             $quoteCollectionFactory,
             $this->createMock(QuoteItemCollectionFactory::class),
-            $this->createMock(DateTime::class)
+            $this->createMock(DateTime::class),
+            $this->storeTime()
         );
 
         $invalid = [
@@ -119,7 +124,7 @@ class GetAbandonedCartsTest extends TestCase
         $itemCollectionFactory = $this->createMock(QuoteItemCollectionFactory::class);
         $itemCollectionFactory->method('create')->willReturn($itemCollection);
 
-        $tool = new GetAbandonedCarts($quoteCollectionFactory, $itemCollectionFactory, $dateTime);
+        $tool = new GetAbandonedCarts($quoteCollectionFactory, $itemCollectionFactory, $dateTime, $this->storeTime());
 
         $result = $tool->execute(['min_total' => 1000]);
 
@@ -160,7 +165,7 @@ class GetAbandonedCartsTest extends TestCase
         $itemCollectionFactory = $this->createMock(QuoteItemCollectionFactory::class);
         $itemCollectionFactory->expects($this->never())->method('create');
 
-        $tool = new GetAbandonedCarts($quoteCollectionFactory, $itemCollectionFactory, $dateTime);
+        $tool = new GetAbandonedCarts($quoteCollectionFactory, $itemCollectionFactory, $dateTime, $this->storeTime());
 
         $result = $tool->execute([]);
 

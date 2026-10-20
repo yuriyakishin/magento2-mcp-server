@@ -11,9 +11,12 @@ use Magento\Sales\Api\Data\OrderInterface;
 use Magento\Sales\Api\OrderRepositoryInterface;
 use PHPUnit\Framework\TestCase;
 use Yu\McpServer\Model\Tools\Order\GetOrderStatus;
+use Yu\McpServer\Test\Unit\Model\StoreTimeMockTrait;
 
 class GetOrderStatusTest extends TestCase
 {
+    use StoreTimeMockTrait;
+
     /**
      * order_get exposes order data, so it must require the Sales ACL resource.
      */
@@ -21,7 +24,8 @@ class GetOrderStatusTest extends TestCase
     {
         $tool = new GetOrderStatus(
             $this->createMock(OrderRepositoryInterface::class),
-            $this->createMock(SearchCriteriaBuilder::class)
+            $this->createMock(SearchCriteriaBuilder::class),
+            $this->storeTime()
         );
 
         $this->assertSame('Magento_Sales::sales', $tool->getRequiredAclResource());
@@ -50,7 +54,7 @@ class GetOrderStatusTest extends TestCase
         $orderRepository = $this->createMock(OrderRepositoryInterface::class);
         $orderRepository->method('getList')->with($searchCriteria)->willReturn($searchResults);
 
-        $tool = new GetOrderStatus($orderRepository, $searchCriteriaBuilder);
+        $tool = new GetOrderStatus($orderRepository, $searchCriteriaBuilder, $this->storeTime());
 
         $result = $tool->execute(['order_number' => '000000123']);
 
@@ -66,7 +70,7 @@ class GetOrderStatusTest extends TestCase
         $orderRepository = $this->createMock(OrderRepositoryInterface::class);
         $searchCriteriaBuilder = $this->createMock(SearchCriteriaBuilder::class);
 
-        $tool = new GetOrderStatus($orderRepository, $searchCriteriaBuilder);
+        $tool = new GetOrderStatus($orderRepository, $searchCriteriaBuilder, $this->storeTime());
 
         $this->expectException(\InvalidArgumentException::class);
 
@@ -90,7 +94,7 @@ class GetOrderStatusTest extends TestCase
         $orderRepository = $this->createMock(OrderRepositoryInterface::class);
         $orderRepository->method('getList')->willReturn($searchResults);
 
-        $tool = new GetOrderStatus($orderRepository, $searchCriteriaBuilder);
+        $tool = new GetOrderStatus($orderRepository, $searchCriteriaBuilder, $this->storeTime());
 
         $this->expectException(\RuntimeException::class);
 

@@ -14,9 +14,12 @@ use Magento\Indexer\Model\Indexer\Collection as IndexerCollection;
 use Magento\Indexer\Model\Indexer\CollectionFactory as IndexerCollectionFactory;
 use PHPUnit\Framework\TestCase;
 use Yu\McpServer\Model\Tools\System\GetSystemHealth;
+use Yu\McpServer\Test\Unit\Model\StoreTimeMockTrait;
 
 class GetSystemHealthTest extends TestCase
 {
+    use StoreTimeMockTrait;
+
     /**
      * Indexer/cron/cache state is system administration data — admin-only ACL.
      */
@@ -26,7 +29,8 @@ class GetSystemHealthTest extends TestCase
             $this->createMock(IndexerCollectionFactory::class),
             $this->createMock(ScheduleCollectionFactory::class),
             $this->createMock(TypeListInterface::class),
-            $this->createMock(DateTime::class)
+            $this->createMock(DateTime::class),
+            $this->storeTime()
         );
 
         $this->assertSame('Magento_Backend::system', $tool->getRequiredAclResource());
@@ -91,7 +95,7 @@ class GetSystemHealthTest extends TestCase
         $dateTime = $this->createMock(DateTime::class);
         $dateTime->method('gmtTimestamp')->willReturn($now);
 
-        $tool = new GetSystemHealth($indexerFactory, $scheduleFactory, $cacheTypeList, $dateTime);
+        $tool = new GetSystemHealth($indexerFactory, $scheduleFactory, $cacheTypeList, $dateTime, $this->storeTime());
 
         $result = $tool->execute([]);
 
@@ -135,7 +139,7 @@ class GetSystemHealthTest extends TestCase
         $dateTime = $this->createMock(DateTime::class);
         $dateTime->method('gmtTimestamp')->willReturn(time());
 
-        $tool = new GetSystemHealth($indexerFactory, $scheduleFactory, $cacheTypeList, $dateTime);
+        $tool = new GetSystemHealth($indexerFactory, $scheduleFactory, $cacheTypeList, $dateTime, $this->storeTime());
 
         $result = $tool->execute([]);
 

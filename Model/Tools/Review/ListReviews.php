@@ -7,6 +7,7 @@ namespace Yu\McpServer\Model\Tools\Review;
 use Magento\Catalog\Model\ResourceModel\Product\CollectionFactory as ProductCollectionFactory;
 use Magento\Review\Model\ResourceModel\Review\CollectionFactory;
 use Magento\Review\Model\Review;
+use Yu\McpServer\Model\StoreTime;
 use Yu\McpServer\Model\ToolInterface;
 
 /**
@@ -27,7 +28,8 @@ class ListReviews implements ToolInterface
 
     public function __construct(
         private readonly CollectionFactory $reviewCollectionFactory,
-        private readonly ProductCollectionFactory $productCollectionFactory
+        private readonly ProductCollectionFactory $productCollectionFactory,
+        private readonly StoreTime $storeTime
     ) {
     }
 
@@ -50,7 +52,8 @@ class ListReviews implements ToolInterface
             . 'text, averaged 1-5 rating and the reviewed product (SKU + name). Use it to '
             . 'analyse recent feedback (e.g. rating_max=2 plus a date range for negative '
             . 'reviews of the last week) and to pick review ids for review_moderate. Dates '
-            . 'are compared in UTC. The rating filter is applied within each fetched page, so '
+            . 'are in store local time '
+            . '(store_info reports the timezone). The rating filter is applied within each fetched page, so '
             . 'a page may return fewer than "limit" reviews even when more pages exist '
             . '("total" counts status/date matches and ignores the rating filter).';
     }
@@ -71,12 +74,12 @@ class ListReviews implements ToolInterface
                 ],
                 'created_from' => [
                     'type' => 'string',
-                    'description' => 'Only reviews created at or after this UTC date, '
+                    'description' => 'Only reviews created at or after this date (store local time), '
                         . '"YYYY-MM-DD" or "YYYY-MM-DD HH:MM:SS".',
                 ],
                 'created_to' => [
                     'type' => 'string',
-                    'description' => 'Only reviews created at or before this UTC date, '
+                    'description' => 'Only reviews created at or before this date (store local time), '
                         . '"YYYY-MM-DD" (whole day included) or "YYYY-MM-DD HH:MM:SS".',
                 ],
                 'rating_min' => [
@@ -134,10 +137,10 @@ class ListReviews implements ToolInterface
             $collection->addStatusFilter(self::STATUS_MAP[$status]);
         }
         if ($createdFrom !== null) {
-            $collection->addFieldToFilter('main_table.created_at', ['gteq' => $createdFrom]);
+            $collection->addFieldToFilter('main_table.created_at', ['gteq' => $this->storeTime->toUtc($createdFrom)]);
         }
         if ($createdTo !== null) {
-            $collection->addFieldToFilter('main_table.created_at', ['lteq' => $createdTo]);
+            $collection->addFieldToFilter('main_table.created_at', ['lteq' => $this->storeTime->toUtc($createdTo)]);
         }
         $collection->setDateOrder();
         $collection->setPageSize($limit);
@@ -157,7 +160,7 @@ class ListReviews implements ToolInterface
             $productIds[] = $productId;
             $reviews[] = [
                 'review_id' => (int)$review->getData('review_id'),
-                'created_at' => $review->getData('created_at'),
+                'created_at' => $this->storeTime->toLocal($review->getData('created_at')),
                 'status' => array_search((int)$review->getData('status_id'), self::STATUS_MAP, true) ?: 'unknown',
                 'nickname' => $review->getData('nickname'),
                 'title' => $review->getData('title'),

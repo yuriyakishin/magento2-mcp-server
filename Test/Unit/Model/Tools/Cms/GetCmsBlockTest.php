@@ -11,9 +11,12 @@ use Magento\Store\Model\Store;
 use Magento\Store\Model\StoreManagerInterface;
 use PHPUnit\Framework\TestCase;
 use Yu\McpServer\Model\Tools\Cms\GetCmsBlock;
+use Yu\McpServer\Test\Unit\Model\StoreTimeMockTrait;
 
 class GetCmsBlockTest extends TestCase
 {
+    use StoreTimeMockTrait;
+
     /**
      * cms_block_get is a public tool and must not require an ACL resource.
      */
@@ -21,7 +24,8 @@ class GetCmsBlockTest extends TestCase
     {
         $tool = new GetCmsBlock(
             $this->createMock(GetBlockByIdentifierInterface::class),
-            $this->createMock(StoreManagerInterface::class)
+            $this->createMock(StoreManagerInterface::class),
+            $this->storeTime()
         );
 
         $this->assertNull($tool->getRequiredAclResource());
@@ -35,7 +39,8 @@ class GetCmsBlockTest extends TestCase
     {
         $tool = new GetCmsBlock(
             $this->createMock(GetBlockByIdentifierInterface::class),
-            $this->createMock(StoreManagerInterface::class)
+            $this->createMock(StoreManagerInterface::class),
+            $this->storeTime()
         );
 
         $this->expectException(\InvalidArgumentException::class);
@@ -53,7 +58,7 @@ class GetCmsBlockTest extends TestCase
             NoSuchEntityException::singleField('identifier', 'missing')
         );
 
-        $tool = new GetCmsBlock($getBlockByIdentifier, $this->mockStoreManager());
+        $tool = new GetCmsBlock($getBlockByIdentifier, $this->mockStoreManager(), $this->storeTime());
 
         $this->expectException(\RuntimeException::class);
         $this->expectExceptionMessage('CMS block with identifier "missing" does not exist.');
@@ -72,7 +77,7 @@ class GetCmsBlockTest extends TestCase
         $getBlockByIdentifier = $this->createMock(GetBlockByIdentifierInterface::class);
         $getBlockByIdentifier->method('execute')->willReturn($block);
 
-        $tool = new GetCmsBlock($getBlockByIdentifier, $this->mockStoreManager());
+        $tool = new GetCmsBlock($getBlockByIdentifier, $this->mockStoreManager(), $this->storeTime());
 
         $this->expectException(\RuntimeException::class);
         $this->expectExceptionMessage('CMS block with identifier "draft" does not exist.');
@@ -96,7 +101,7 @@ class GetCmsBlockTest extends TestCase
         $getBlockByIdentifier = $this->createMock(GetBlockByIdentifierInterface::class);
         $getBlockByIdentifier->method('execute')->with('delivery-terms', 1)->willReturn($block);
 
-        $tool = new GetCmsBlock($getBlockByIdentifier, $this->mockStoreManager());
+        $tool = new GetCmsBlock($getBlockByIdentifier, $this->mockStoreManager(), $this->storeTime());
 
         $result = $tool->execute(['identifier' => 'delivery-terms']);
 

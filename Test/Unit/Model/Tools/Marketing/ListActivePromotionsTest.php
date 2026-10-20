@@ -4,25 +4,28 @@ declare(strict_types=1);
 
 namespace Yu\McpServer\Test\Unit\Model\Tools\Marketing;
 
+use Magento\Customer\Api\Data\GroupInterface;
 use Magento\Framework\Stdlib\DateTime\TimezoneInterface;
 use Magento\SalesRule\Model\Coupon;
 use Magento\SalesRule\Model\ResourceModel\Rule\Collection;
 use Magento\SalesRule\Model\ResourceModel\Rule\CollectionFactory;
 use Magento\SalesRule\Model\Rule;
+use PHPUnit\Framework\MockObject\MockObject;
 use PHPUnit\Framework\TestCase;
+use Yu\McpServer\Model\Auth\AdminContext;
 use Yu\McpServer\Model\Tools\Marketing\ListActivePromotions;
+use Yu\McpServer\Test\Unit\Model\Tools\Catalog\StorefrontScopeMockTrait;
 
 class ListActivePromotionsTest extends TestCase
 {
+    use StorefrontScopeMockTrait;
+
     /**
      * promotion_list is a public tool and must not require an ACL resource.
      */
     public function testRequiresNoAclResource(): void
     {
-        $tool = new ListActivePromotions(
-            $this->createMock(CollectionFactory::class),
-            $this->createMock(TimezoneInterface::class)
-        );
+        $tool = $this->tool($this->createMock(CollectionFactory::class));
 
         $this->assertNull($tool->getRequiredAclResource());
         $this->assertSame('promotion_list', $tool->getName());
@@ -33,10 +36,7 @@ class ListActivePromotionsTest extends TestCase
      */
     public function testThrowsOnInvalidLimit(): void
     {
-        $tool = new ListActivePromotions(
-            $this->createMock(CollectionFactory::class),
-            $this->createMock(TimezoneInterface::class)
-        );
+        $tool = $this->tool($this->createMock(CollectionFactory::class));
 
         $this->expectException(\InvalidArgumentException::class);
 
@@ -44,87 +44,112 @@ class ListActivePromotionsTest extends TestCase
     }
 
     /**
-     * Active rules are returned with their public fields; the coupon CODE itself must
-     * never appear in the result, only the fact that one is required.
+     * The customer view: only rules a guest of this website gets (website + NOT LOGGED
+     * IN group + date filter), described by their storefront label. The internal rule
+     * name and description must not be returned, and neither may a coupon code.
      */
-    public function testReturnsActivePromotionsWithoutCouponCodes(): void
+    public function testAnonymousGetsGuestRulesWithStorefrontLabelOnly(): void
     {
-        $rule = $this->createMock(Rule::class);
-        $rule->method('getData')->willReturnMap([
-            ['name', null, 'Summer Sale'],
-            ['description', null, '10% off everything'],
+        $rule = $this->rule([
+            ['name', null, 'Partner deal - wholesale'],
+            ['description', null, 'Internal note'],
             ['from_date', null, '2026-07-01'],
             ['to_date', null, '2026-07-31'],
             ['simple_action', null, 'by_percent'],
             ['discount_amount', null, '10.0000'],
             ['coupon_type', null, (string)Rule::COUPON_TYPE_SPECIFIC],
-        ]);
+        ], 'Summer Sale');
 
-        $collection = $this->createMock(Collection::class);
-        $collection->expects($this->exactly(3))->method('addFieldToFilter');
-        $collection->method('setPageSize')->willReturnSelf();
-        $collection->method('getIterator')->willReturn(new \ArrayIterator([$rule]));
+        $collection = $this->collection([$rule]);
+        $collection->expects($this->once())
+            ->method('addWebsiteGroupDateFilter')
+            ->with(1, GroupInterface::NOT_LOGGED_IN_ID, '2026-07-07');
+        $collection->expects($this->never())->method('addFieldToFilter');
 
-        $collectionFactory = $this->createMock(CollectionFactory::class);
-        $collectionFactory->method('create')->willReturn($collection);
-
-        $timezone = $this->createMock(TimezoneInterface::class);
-        $timezone->method('date')->willReturn(new \DateTime('2026-07-07'));
-
-        $tool = new ListActivePromotions($collectionFactory, $timezone);
-
-        $result = $tool->execute([]);
+        $result = $this->tool($this->factory($collection))->execute([]);
 
         $this->assertSame(1, $result['count']);
-        $promotion = $result['promotions'][0];
-        $this->assertSame('Summer Sale', $promotion['name']);
-        $this->assertSame('by_percent', $promotion['action']);
-        $this->assertSame(10.0, $promotion['discount_amount']);
-        $this->assertTrue($promotion['coupon_required']);
-        $this->assertArrayNotHasKey('coupon_code', $promotion);
-        $this->assertArrayNotHasKey('code', $promotion);
+        $this->assertSame(
+            [
+                'label' => 'Summer Sale',
+                'from_date' => '2026-07-01',
+                'to_date' => '2026-07-31',
+                'action' => 'by_percent',
+                'discount_amount' => 10.0,
+                'coupon_required' => true,
+            ],
+            $result['promotions'][0]
+        );
     }
 
     /**
-     * A coupon rule whose own code was pasted into its name or description by the
-     * merchant must have that code redacted from the returned text — otherwise the
-     * "codes are never returned" guarantee is defeated by the rule's own wording.
+     * The admin view: every active rule of every website and group, with the internal
+     * name and description alongside the label.
      */
-    public function testRedactsCouponCodeLeakedIntoNameAndDescription(): void
+    public function testAdminGetsAllActiveRulesWithInternalTexts(): void
+    {
+        $rule = $this->rule([
+            ['name', null, 'Partner deal - wholesale'],
+            ['description', null, 'Internal note'],
+            ['coupon_type', null, (string)Rule::COUPON_TYPE_NO_COUPON],
+        ], false);
+
+        $collection = $this->collection([$rule]);
+        $collection->expects($this->never())->method('addWebsiteGroupDateFilter');
+        $collection->expects($this->exactly(3))->method('addFieldToFilter');
+
+        $result = $this->tool($this->factory($collection))->executeWithContext(
+            [],
+            new AdminContext(1, ['Magento_SalesRule::quote'])
+        );
+
+        $promotion = $result['promotions'][0];
+        $this->assertNull($promotion['label']);
+        $this->assertSame('Partner deal - wholesale', $promotion['name']);
+        $this->assertSame('Internal note', $promotion['description']);
+        $this->assertFalse($promotion['coupon_required']);
+    }
+
+    /**
+     * An admin without the cart price rule ACL gets the customer view.
+     */
+    public function testAdminWithoutRuleAclGetsCustomerView(): void
+    {
+        $collection = $this->collection([]);
+        $collection->expects($this->once())->method('addWebsiteGroupDateFilter');
+
+        $this->tool($this->factory($collection))->executeWithContext(
+            [],
+            new AdminContext(1, ['Magento_Sales::sales'])
+        );
+    }
+
+    /**
+     * A coupon rule whose own code was pasted into its texts by the merchant must have
+     * that code redacted everywhere — otherwise the "codes are never returned" guarantee
+     * is defeated by the rule's own wording.
+     */
+    public function testRedactsCouponCodeLeakedIntoTexts(): void
     {
         $coupon = $this->createMock(Coupon::class);
         $coupon->method('getCode')->willReturn('H20');
 
-        $rule = $this->createMock(Rule::class);
-        $rule->method('getPrimaryCoupon')->willReturn($coupon);
-        $rule->method('getData')->willReturnMap([
+        $rule = $this->rule([
             ['name', null, 'Water bottle sale (code H20)'],
             ['description', null, 'Use promo code h20 at checkout'],
-            ['from_date', null, null],
-            ['to_date', null, null],
-            ['simple_action', null, 'by_fixed'],
-            ['discount_amount', null, '4.0000'],
             ['coupon_type', null, (string)Rule::COUPON_TYPE_SPECIFIC],
-        ]);
+        ], 'Enter H20 for $4 off');
+        $rule->method('getPrimaryCoupon')->willReturn($coupon);
 
-        $collection = $this->createMock(Collection::class);
-        $collection->method('setPageSize')->willReturnSelf();
-        $collection->method('getIterator')->willReturn(new \ArrayIterator([$rule]));
+        $tool = $this->tool($this->factory($this->collection([$rule])));
 
-        $collectionFactory = $this->createMock(CollectionFactory::class);
-        $collectionFactory->method('create')->willReturn($collection);
+        $guest = $tool->execute([])['promotions'][0];
+        $admin = $tool->executeWithContext([], new AdminContext(1, ['Magento_Backend::all']))['promotions'][0];
 
-        $timezone = $this->createMock(TimezoneInterface::class);
-        $timezone->method('date')->willReturn(new \DateTime('2026-07-07'));
-
-        $tool = new ListActivePromotions($collectionFactory, $timezone);
-
-        $result = $tool->execute([]);
-
-        $promotion = $result['promotions'][0];
-        $this->assertTrue($promotion['coupon_required']);
-        $this->assertStringNotContainsStringIgnoringCase('H20', $promotion['name']);
-        $this->assertStringNotContainsStringIgnoringCase('H20', $promotion['description']);
+        $this->assertStringNotContainsStringIgnoringCase('H20', $guest['label']);
+        $this->assertStringNotContainsStringIgnoringCase('H20', $admin['label']);
+        $this->assertStringNotContainsStringIgnoringCase('H20', $admin['name']);
+        $this->assertStringNotContainsStringIgnoringCase('H20', $admin['description']);
     }
 
     /**
@@ -133,55 +158,61 @@ class ListActivePromotionsTest extends TestCase
      */
     public function testNoCouponRuleTextIsReturnedVerbatim(): void
     {
-        $rule = $this->createMock(Rule::class);
-        $rule->expects($this->never())->method('getPrimaryCoupon');
-        $rule->method('getData')->willReturnMap([
-            ['name', null, 'Spend $50 or more - shipping is free!'],
-            ['description', null, 'Free shipping on any purchase over $50'],
+        $rule = $this->rule([
             ['coupon_type', null, (string)Rule::COUPON_TYPE_NO_COUPON],
-        ]);
+        ], 'Free shipping on any purchase over $50');
+        $rule->expects($this->never())->method('getPrimaryCoupon');
 
-        $collection = $this->createMock(Collection::class);
-        $collection->method('setPageSize')->willReturnSelf();
-        $collection->method('getIterator')->willReturn(new \ArrayIterator([$rule]));
+        $result = $this->tool($this->factory($this->collection([$rule])))->execute([]);
 
-        $collectionFactory = $this->createMock(CollectionFactory::class);
-        $collectionFactory->method('create')->willReturn($collection);
-
-        $timezone = $this->createMock(TimezoneInterface::class);
-        $timezone->method('date')->willReturn(new \DateTime('2026-07-07'));
-
-        $tool = new ListActivePromotions($collectionFactory, $timezone);
-
-        $result = $tool->execute([]);
-
-        $this->assertSame('Free shipping on any purchase over $50', $result['promotions'][0]['description']);
+        $this->assertSame('Free shipping on any purchase over $50', $result['promotions'][0]['label']);
+        $this->assertFalse($result['promotions'][0]['coupon_required']);
     }
 
     /**
-     * A no-coupon rule reports coupon_required = false; no rules yields an empty list.
+     * @param CollectionFactory $collectionFactory Rule collection factory.
      */
-    public function testNoCouponRuleAndEmptyCollection(): void
+    private function tool(CollectionFactory $collectionFactory): ListActivePromotions
     {
-        $rule = $this->createMock(Rule::class);
-        $rule->method('getData')->willReturnMap([
-            ['coupon_type', null, (string)Rule::COUPON_TYPE_NO_COUPON],
-        ]);
-
-        $collection = $this->createMock(Collection::class);
-        $collection->method('setPageSize')->willReturnSelf();
-        $collection->method('getIterator')->willReturn(new \ArrayIterator([$rule]));
-
-        $collectionFactory = $this->createMock(CollectionFactory::class);
-        $collectionFactory->method('create')->willReturn($collection);
-
         $timezone = $this->createMock(TimezoneInterface::class);
         $timezone->method('date')->willReturn(new \DateTime('2026-07-07'));
 
-        $tool = new ListActivePromotions($collectionFactory, $timezone);
+        return new ListActivePromotions($collectionFactory, $timezone, $this->storeManagerMock());
+    }
 
-        $result = $tool->execute([]);
+    /**
+     * @param array $dataMap getData() return map.
+     * @param string|false $storeLabel getStoreLabel() result.
+     */
+    private function rule(array $dataMap, string|false $storeLabel): Rule&MockObject
+    {
+        $rule = $this->createMock(Rule::class);
+        $rule->method('getData')->willReturnMap($dataMap);
+        $rule->method('getStoreLabel')->willReturn($storeLabel);
 
-        $this->assertFalse($result['promotions'][0]['coupon_required']);
+        return $rule;
+    }
+
+    /**
+     * @param Rule[] $rules Rules the collection iterates over.
+     */
+    private function collection(array $rules): Collection&MockObject
+    {
+        $collection = $this->createMock(Collection::class);
+        $collection->method('setPageSize')->willReturnSelf();
+        $collection->method('getIterator')->willReturn(new \ArrayIterator($rules));
+
+        return $collection;
+    }
+
+    /**
+     * @param Collection $collection Collection the factory creates.
+     */
+    private function factory(Collection $collection): CollectionFactory
+    {
+        $factory = $this->createMock(CollectionFactory::class);
+        $factory->method('create')->willReturn($collection);
+
+        return $factory;
     }
 }

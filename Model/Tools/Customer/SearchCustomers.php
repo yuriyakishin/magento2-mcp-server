@@ -7,6 +7,7 @@ namespace Yu\McpServer\Model\Tools\Customer;
 use Magento\Customer\Model\ResourceModel\Customer\CollectionFactory as CustomerCollectionFactory;
 use Magento\Sales\Model\Order;
 use Magento\Sales\Model\ResourceModel\Order\CollectionFactory as OrderCollectionFactory;
+use Yu\McpServer\Model\StoreTime;
 use Yu\McpServer\Model\ToolInterface;
 
 /**
@@ -21,7 +22,8 @@ class SearchCustomers implements ToolInterface
 
     public function __construct(
         private readonly CustomerCollectionFactory $customerCollectionFactory,
-        private readonly OrderCollectionFactory $orderCollectionFactory
+        private readonly OrderCollectionFactory $orderCollectionFactory,
+        private readonly StoreTime $storeTime
     ) {
     }
 
@@ -109,7 +111,7 @@ class SearchCustomers implements ToolInterface
                     ($customer->getData('firstname') ?? '') . ' ' . ($customer->getData('lastname') ?? '')
                 ),
                 'email' => $customer->getData('email'),
-                'registered_at' => $customer->getData('created_at'),
+                'registered_at' => $this->storeTime->toLocal($customer->getData('created_at')),
                 'orders_count' => 0,
                 'total_spent_base' => 0.0,
             ];

@@ -13,9 +13,12 @@ use Magento\Framework\Exception\NoSuchEntityException;
 use PHPUnit\Framework\TestCase;
 use Yu\McpServer\Model\Auth\AdminContext;
 use Yu\McpServer\Model\Tools\Product\CheckStock;
+use Yu\McpServer\Test\Unit\Model\Tools\Catalog\StorefrontScopeMockTrait;
 
 class CheckStockTest extends TestCase
 {
+    use StorefrontScopeMockTrait;
+
     /**
      * product_check_stock is a public tool and must not require an ACL resource.
      */
@@ -23,7 +26,8 @@ class CheckStockTest extends TestCase
     {
         $tool = new CheckStock(
             $this->createMock(StockRegistryInterface::class),
-            $this->createMock(ProductRepositoryInterface::class)
+            $this->createMock(ProductRepositoryInterface::class),
+            $this->storefrontScope()
         );
 
         $this->assertNull($tool->getRequiredAclResource());
@@ -37,7 +41,8 @@ class CheckStockTest extends TestCase
     {
         $tool = new CheckStock(
             $this->createMock(StockRegistryInterface::class),
-            $this->createMock(ProductRepositoryInterface::class)
+            $this->createMock(ProductRepositoryInterface::class),
+            $this->storefrontScope()
         );
 
         foreach (
@@ -71,7 +76,7 @@ class CheckStockTest extends TestCase
         $stockRegistry = $this->createMock(StockRegistryInterface::class);
         $stockRegistry->method('getStockItemBySku')->willReturn($stockItem);
 
-        $tool = new CheckStock($stockRegistry, $this->productRepositoryMock(['known' => Status::STATUS_ENABLED]));
+        $tool = new CheckStock($stockRegistry, $this->productRepositoryMock(['known' => Status::STATUS_ENABLED]), $this->storefrontScope());
 
         $result = $tool->execute(['skus' => ['known', 'missing']]);
 
@@ -95,7 +100,7 @@ class CheckStockTest extends TestCase
         $stockRegistry = $this->createMock(StockRegistryInterface::class);
         $stockRegistry->expects($this->once())->method('getStockItemBySku')->willReturn($stockItem);
 
-        $tool = new CheckStock($stockRegistry, $this->productRepositoryMock(['A-1' => Status::STATUS_ENABLED]));
+        $tool = new CheckStock($stockRegistry, $this->productRepositoryMock(['A-1' => Status::STATUS_ENABLED]), $this->storefrontScope());
 
         $result = $tool->execute(['skus' => ['A-1', 'A-1', ' A-1 ']]);
 
@@ -111,11 +116,30 @@ class CheckStockTest extends TestCase
         $stockRegistry = $this->createMock(StockRegistryInterface::class);
         $stockRegistry->expects($this->never())->method('getStockItemBySku');
 
-        $tool = new CheckStock($stockRegistry, $this->productRepositoryMock(['hidden' => Status::STATUS_DISABLED]));
+        $tool = new CheckStock($stockRegistry, $this->productRepositoryMock(['hidden' => Status::STATUS_DISABLED]), $this->storefrontScope());
 
         $result = $tool->execute(['skus' => ['hidden']]);
 
         $this->assertSame(['sku' => 'hidden', 'found' => false], $result['stock'][0]);
+    }
+
+    /**
+     * The customer view: an enabled product of another website is not found either.
+     */
+    public function testAnonymousCallerSeesOtherWebsiteProductAsNotFound(): void
+    {
+        $stockRegistry = $this->createMock(StockRegistryInterface::class);
+        $stockRegistry->expects($this->never())->method('getStockItemBySku');
+
+        $tool = new CheckStock(
+            $stockRegistry,
+            $this->productRepositoryMock(['other' => Status::STATUS_ENABLED], [2]),
+            $this->storefrontScope()
+        );
+
+        $result = $tool->execute(['skus' => ['other']]);
+
+        $this->assertSame(['sku' => 'other', 'found' => false], $result['stock'][0]);
     }
 
     /**
@@ -131,7 +155,7 @@ class CheckStockTest extends TestCase
         $stockRegistry = $this->createMock(StockRegistryInterface::class);
         $stockRegistry->method('getStockItemBySku')->willReturn($stockItem);
 
-        $tool = new CheckStock($stockRegistry, $this->productRepositoryMock(['hidden' => Status::STATUS_DISABLED]));
+        $tool = new CheckStock($stockRegistry, $this->productRepositoryMock(['hidden' => Status::STATUS_DISABLED]), $this->storefrontScope());
 
         $result = $tool->executeWithContext(
             ['skus' => ['hidden']],
@@ -151,7 +175,8 @@ class CheckStockTest extends TestCase
     {
         $tool = new CheckStock(
             $this->createMock(StockRegistryInterface::class),
-            $this->productRepositoryMock(['hidden' => Status::STATUS_DISABLED])
+            $this->productRepositoryMock(['hidden' => Status::STATUS_DISABLED]),
+            $this->storefrontScope()
         );
 
         $result = $tool->executeWithContext(
@@ -168,16 +193,17 @@ class CheckStockTest extends TestCase
      *
      * @param array<string, int> $statusBySku
      */
-    private function productRepositoryMock(array $statusBySku): ProductRepositoryInterface
+    private function productRepositoryMock(array $statusBySku, array $websiteIds = [1]): ProductRepositoryInterface
     {
         $repository = $this->createMock(ProductRepositoryInterface::class);
         $repository->method('get')->willReturnCallback(
-            function (string $sku) use ($statusBySku) {
+            function (string $sku) use ($statusBySku, $websiteIds) {
                 if (!isset($statusBySku[$sku])) {
                     throw NoSuchEntityException::singleField('sku', $sku);
                 }
                 $product = $this->createMock(Product::class);
                 $product->method('getStatus')->willReturn($statusBySku[$sku]);
+                $product->method('getWebsiteIds')->willReturn($websiteIds);
 
                 return $product;
             }

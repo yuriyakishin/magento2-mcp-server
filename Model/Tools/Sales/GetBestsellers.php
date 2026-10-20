@@ -5,6 +5,7 @@ declare(strict_types=1);
 namespace Yu\McpServer\Model\Tools\Sales;
 
 use Magento\Sales\Model\ResourceModel\Order\Item\CollectionFactory as OrderItemCollectionFactory;
+use Yu\McpServer\Model\StoreTime;
 use Yu\McpServer\Model\ToolInterface;
 
 /**
@@ -20,7 +21,8 @@ class GetBestsellers implements ToolInterface
     private const ITEM_SCAN_LIMIT = 20000;
 
     public function __construct(
-        private readonly OrderItemCollectionFactory $orderItemCollectionFactory
+        private readonly OrderItemCollectionFactory $orderItemCollectionFactory,
+        private readonly StoreTime $storeTime
     ) {
     }
 
@@ -40,7 +42,8 @@ class GetBestsellers implements ToolInterface
         return 'Best-selling products for a date range, sorted by quantity sold or by revenue. '
             . 'Returns SKU, name, quantity, revenue and the number of distinct orders per '
             . 'product. Quantities are as ordered (cancellations not subtracted). Dates are '
-            . 'compared in UTC. Typical use: "top 10 products this month", "what brought the '
+            . 'in store local time '
+            . '(store_info reports the timezone). Typical use: "top 10 products this month", "what brought the '
             . 'most revenue last quarter?".';
     }
 
@@ -54,12 +57,12 @@ class GetBestsellers implements ToolInterface
             'properties' => [
                 'created_from' => [
                     'type' => 'string',
-                    'description' => 'Start of the period (inclusive), UTC, "YYYY-MM-DD" or '
+                    'description' => 'Start of the period (inclusive), store local time, "YYYY-MM-DD" or '
                         . '"YYYY-MM-DD HH:MM:SS".',
                 ],
                 'created_to' => [
                     'type' => 'string',
-                    'description' => 'End of the period (inclusive), UTC, "YYYY-MM-DD" '
+                    'description' => 'End of the period (inclusive), store local time, "YYYY-MM-DD" '
                         . '(whole day included) or "YYYY-MM-DD HH:MM:SS". Omit for "up to now".',
                 ],
                 'sort_by' => [
@@ -96,9 +99,9 @@ class GetBestsellers implements ToolInterface
         $limit = $this->limitArgument($arguments);
 
         $collection = $this->orderItemCollectionFactory->create();
-        $collection->addFieldToFilter('created_at', ['gteq' => $createdFrom]);
+        $collection->addFieldToFilter('created_at', ['gteq' => $this->storeTime->toUtc($createdFrom)]);
         if ($createdTo !== null) {
-            $collection->addFieldToFilter('created_at', ['lteq' => $createdTo]);
+            $collection->addFieldToFilter('created_at', ['lteq' => $this->storeTime->toUtc($createdTo)]);
         }
         // Children of configurable/bundle rows would double the quantities.
         $collection->addFieldToFilter('parent_item_id', ['null' => true]);

@@ -9,6 +9,7 @@ use Magento\Cron\Model\Schedule;
 use Magento\Framework\App\Cache\TypeListInterface;
 use Magento\Framework\Stdlib\DateTime\DateTime;
 use Magento\Indexer\Model\Indexer\CollectionFactory as IndexerCollectionFactory;
+use Yu\McpServer\Model\StoreTime;
 use Yu\McpServer\Model\ToolInterface;
 
 /**
@@ -29,7 +30,8 @@ class GetSystemHealth implements ToolInterface
         private readonly IndexerCollectionFactory $indexerCollectionFactory,
         private readonly ScheduleCollectionFactory $scheduleCollectionFactory,
         private readonly TypeListInterface $cacheTypeList,
-        private readonly DateTime $dateTime
+        private readonly DateTime $dateTime,
+        private readonly StoreTime $storeTime
     ) {
     }
 
@@ -147,7 +149,7 @@ class GetSystemHealth implements ToolInterface
             if ($status === Schedule::STATUS_ERROR && count($errors) < self::MAX_ERROR_SAMPLES) {
                 $errors[] = [
                     'job_code' => (string)$schedule->getData('job_code'),
-                    'executed_at' => (string)$schedule->getData('executed_at'),
+                    'executed_at' => (string)$this->storeTime->toLocal((string)$schedule->getData('executed_at')),
                     'message' => mb_substr(
                         (string)$schedule->getData('messages'),
                         0,
@@ -159,7 +161,7 @@ class GetSystemHealth implements ToolInterface
             if ($status === Schedule::STATUS_RUNNING && $executedAt !== '' && $executedAt < $stuckBefore) {
                 $stuck[] = [
                     'job_code' => (string)$schedule->getData('job_code'),
-                    'executed_at' => $executedAt,
+                    'executed_at' => $this->storeTime->toLocal($executedAt),
                 ];
             }
         }

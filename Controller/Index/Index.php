@@ -19,6 +19,7 @@ use Yu\McpServer\Exception\UnauthorizedException;
 use Yu\McpServer\Model\Auth\AdminContext;
 use Yu\McpServer\Model\Auth\AdminTokenValidator;
 use Yu\McpServer\Model\Auth\AnonymousRateLimiter;
+use Yu\McpServer\Model\Auth\ClientIpResolver;
 use Yu\McpServer\Model\Config;
 use Yu\McpServer\Model\JsonRpcHandler;
 
@@ -49,7 +50,8 @@ class Index implements HttpPostActionInterface, HttpGetActionInterface, CsrfAwar
         private readonly AdminTokenValidator $adminTokenValidator,
         private readonly Config $config,
         private readonly LoggerInterface $logger,
-        private readonly AnonymousRateLimiter $anonymousRateLimiter
+        private readonly AnonymousRateLimiter $anonymousRateLimiter,
+        private readonly ClientIpResolver $clientIpResolver
     ) {
     }
 
@@ -91,12 +93,10 @@ class Index implements HttpPostActionInterface, HttpGetActionInterface, CsrfAwar
         }
 
         // Anonymous traffic is throttled per IP; authenticated callers are exempt (their
-        // damage potential is bounded by ACL, not volume). getClientIp() (proxy-aware,
-        // reads X-Forwarded-For) instead of plain REMOTE_ADDR is essential here: behind
-        // a reverse proxy, CDN or tunnel REMOTE_ADDR is the proxy's address for every
-        // external request, which would put all visitors into one shared bucket.
+        // damage potential is bounded by ACL, not volume). See ClientIpResolver for how
+        // the IP is determined behind a proxy without trusting client-supplied headers.
         if ($adminContext === null) {
-            $ipAddress = (string)$this->request->getClientIp();
+            $ipAddress = $this->clientIpResolver->resolve();
             if (!$this->anonymousRateLimiter->registerAndCheck($ipAddress)) {
                 $this->logger->warning(sprintf('Anonymous rate limit exceeded for IP %s', $ipAddress));
 
@@ -194,12 +194,13 @@ class Index implements HttpPostActionInterface, HttpGetActionInterface, CsrfAwar
         // Magento's Request::getHeader() already unwraps the header to its plain string
         // field value (or false if absent) — unlike the raw Laminas parent method, it does
         // not return a Header object here.
+        // The auth scheme is case-insensitive (RFC 9110 §11.1), so "bearer" is accepted too.
         $value = $this->request->getHeader('Authorization');
-        if ($value === false || !str_starts_with($value, 'Bearer ')) {
+        if ($value === false || !preg_match('/^Bearer[ \t]+(\S+)[ \t]*$/i', $value, $matches)) {
             return null;
         }
 
-        return substr($value, strlen('Bearer '));
+        return $matches[1];
     }
 
     /**

@@ -18,7 +18,7 @@ use Yu\McpServer\Model\PromptInterface;
  */
 class NegativeReport implements PromptInterface
 {
-    private const DEFAULT_WINDOW_DESCRIPTION = '7 days before today (UTC)';
+    private const DEFAULT_WINDOW_DESCRIPTION = '7 days before today (store local time)';
 
     /**
      * @inheritDoc
@@ -73,12 +73,12 @@ class NegativeReport implements PromptInterface
         }
 
         $fromDescription = $createdFrom !== '' ? $createdFrom : self::DEFAULT_WINDOW_DESCRIPTION;
-        $toDescription = $createdTo !== '' ? $createdTo : 'today (UTC)';
+        $toDescription = $createdTo !== '' ? $createdTo : 'today (store local time)';
 
         $text = <<<PROMPT
 Run a negative-review content scan.
 
-1. Resolve the window into concrete UTC dates: created_from {$fromDescription}, created_to
+1. Resolve the window into concrete store-local dates: created_from {$fromDescription}, created_to
    {$toDescription}.
 2. Fetch the reviews — review_list with the resolved created_from/created_to, across all
    moderation statuses (no status filter) and with no rating filter — ratings are optional

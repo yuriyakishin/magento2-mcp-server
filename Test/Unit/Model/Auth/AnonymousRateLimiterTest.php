@@ -4,68 +4,38 @@ declare(strict_types=1);
 
 namespace Yu\McpServer\Test\Unit\Model\Auth;
 
-use Magento\Framework\App\CacheInterface;
 use PHPUnit\Framework\TestCase;
 use Yu\McpServer\Model\Auth\AnonymousRateLimiter;
 
 class AnonymousRateLimiterTest extends TestCase
 {
-    /**
-     * Builds a limiter over an in-memory fake of the cache backend.
-     */
-    private function makeLimiter(): AnonymousRateLimiter
-    {
-        $storage = [];
-
-        $cache = $this->createMock(CacheInterface::class);
-        $cache->method('load')->willReturnCallback(
-            static function (string $id) use (&$storage) {
-                return $storage[$id] ?? false;
-            }
-        );
-        $cache->method('save')->willReturnCallback(
-            static function (string $data, string $id) use (&$storage) {
-                $storage[$id] = $data;
-                return true;
-            }
-        );
-
-        return new AnonymousRateLimiter($cache);
-    }
+    use InMemoryCounterTrait;
 
     /**
-     * Requests under the per-minute limit pass; the request over it is rejected.
+     * 60 requests per minute pass, the 61st is rejected, and the next minute starts over.
      */
-    public function testBlocksRequestsOverTheLimit(): void
+    public function testLimitsPerMinuteAndRecovers(): void
     {
-        $limiter = $this->makeLimiter();
+        $this->now = 1_800_000_000 - (1_800_000_000 % 60);
+        $limiter = new AnonymousRateLimiter($this->counter());
 
-        for ($i = 1; $i <= 60; $i++) {
-            $this->assertTrue($limiter->registerAndCheck('10.0.0.1'), "request #$i should pass");
+        for ($i = 0; $i < 60; $i++) {
+            $this->assertTrue($limiter->registerAndCheck('203.0.113.7'));
         }
+        $this->assertFalse($limiter->registerAndCheck('203.0.113.7'));
+        $this->assertTrue($limiter->registerAndCheck('198.51.100.1'));
 
-        $this->assertFalse($limiter->registerAndCheck('10.0.0.1'), 'request #61 should be blocked');
+        $this->now += 60;
+        $this->assertTrue($limiter->registerAndCheck('203.0.113.7'));
     }
 
     /**
-     * The counters are per IP — one noisy client must not block another.
+     * Retry-After points at the end of the current window, not a full window ahead.
      */
-    public function testLimitIsPerIp(): void
+    public function testRetryAfterIsTimeLeftInWindow(): void
     {
-        $limiter = $this->makeLimiter();
+        $this->now = 1_800_000_000 - (1_800_000_000 % 60) + 50;
 
-        for ($i = 1; $i <= 61; $i++) {
-            $limiter->registerAndCheck('10.0.0.1');
-        }
-
-        $this->assertTrue($limiter->registerAndCheck('10.0.0.2'));
-    }
-
-    /**
-     * Retry-After advertises the full window as a safe upper bound.
-     */
-    public function testRetryAfterIsTheWindow(): void
-    {
-        $this->assertSame(60, $this->makeLimiter()->retryAfterSeconds());
+        $this->assertSame(10, (new AnonymousRateLimiter($this->counter()))->retryAfterSeconds());
     }
 }

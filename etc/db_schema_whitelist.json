@@ -37,6 +37,7 @@
             "client_id": true,
             "admin_user_id": true,
             "expires_at": true,
+            "refresh_expires_at": true,
             "revoked_at": true,
             "created_at": true
         },

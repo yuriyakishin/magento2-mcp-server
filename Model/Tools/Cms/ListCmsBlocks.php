@@ -5,6 +5,7 @@ declare(strict_types=1);
 namespace Yu\McpServer\Model\Tools\Cms;
 
 use Magento\Cms\Model\ResourceModel\Block\CollectionFactory as BlockCollectionFactory;
+use Yu\McpServer\Model\StoreTime;
 use Yu\McpServer\Model\ToolInterface;
 
 /**
@@ -17,7 +18,8 @@ class ListCmsBlocks implements ToolInterface
     private const MAX_LIMIT = 200;
 
     public function __construct(
-        private readonly BlockCollectionFactory $blockCollectionFactory
+        private readonly BlockCollectionFactory $blockCollectionFactory,
+        private readonly StoreTime $storeTime
     ) {
     }
 
@@ -95,8 +97,8 @@ class ListCmsBlocks implements ToolInterface
                 'identifier' => (string)$block->getData('identifier'),
                 'title' => (string)$block->getData('title'),
                 'is_active' => (bool)$block->getData('is_active'),
-                'created_at' => (string)$block->getData('creation_time'),
-                'updated_at' => (string)$block->getData('update_time'),
+                'created_at' => (string)$this->storeTime->toLocal((string)$block->getData('creation_time')),
+                'updated_at' => (string)$this->storeTime->toLocal((string)$block->getData('update_time')),
             ];
         }
 

@@ -63,8 +63,9 @@ class MorningReport implements PromptInterface
         $text = <<<PROMPT
 Prepare the store owner's morning report for the period: {$period}.
 
-Resolve the period into concrete UTC dates first ("yesterday" = the full previous calendar
-day, "today" = from midnight UTC until now). Then gather the data with the store's tools:
+Resolve the period into concrete dates in the store's local time first ("yesterday" = the
+full previous calendar day, "today" = from the store's midnight until now). The tools read
+and return dates in store local time; store_info reports the timezone. Then gather the data with the store's tools:
 
 1. Sales — sales_summary with created_from/created_to for the period and top_products 5.
 2. Orders needing action — order_list with status "processing" (limit 20, no date filter):

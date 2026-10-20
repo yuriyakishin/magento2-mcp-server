@@ -18,12 +18,16 @@ use Magento\Framework\Exception\AuthenticationException;
 use Magento\Framework\Exception\NoSuchEntityException;
 use Magento\Framework\Stdlib\DateTime\DateTime;
 use Psr\Log\LoggerInterface;
+use Yu\McpServer\Model\Auth\ClientIpResolver;
 use Yu\McpServer\Model\Auth\LoginRateLimiter;
+use Yu\McpServer\Model\Auth\PasswordExpiryCheck;
 use Yu\McpServer\Model\Auth\TfaChallenge;
 use Yu\McpServer\Model\Auth\TwoFactorService;
 use Yu\McpServer\Model\Oauth\AuthCodeFactory;
 use Yu\McpServer\Model\Oauth\AuthCodeRepository;
 use Yu\McpServer\Model\Oauth\ClientRepository;
+use Yu\McpServer\Model\Oauth\RedirectUriPolicy;
+use Yu\McpServer\Model\Oauth\SecretHasher;
 
 /**
  * Renders the MCP OAuth login form (GET) and, on valid credentials (POST), issues a
@@ -63,7 +67,11 @@ class Authorize implements HttpGetActionInterface, HttpPostActionInterface, Csrf
         private readonly TwoFactorService $twoFactorService,
         private readonly TfaChallenge $tfaChallenge,
         private readonly DateTime $dateTime,
-        private readonly LoggerInterface $logger
+        private readonly LoggerInterface $logger,
+        private readonly ClientIpResolver $clientIpResolver,
+        private readonly RedirectUriPolicy $redirectUriPolicy,
+        private readonly PasswordExpiryCheck $passwordExpiryCheck,
+        private readonly SecretHasher $secretHasher
     ) {
     }
 
@@ -114,7 +122,7 @@ class Authorize implements HttpGetActionInterface, HttpPostActionInterface, Csrf
      * unknown redirect_uri is rejected outright rather than redirected to.
      *
      * @return array{client_id: string, redirect_uri: string, code_challenge: string,
-     *     code_challenge_method: string, state: string}
+     *     code_challenge_method: string, state: string, client_name: string}
      */
     private function resolveAuthorizeParams(): array
     {
@@ -155,12 +163,19 @@ class Authorize implements HttpGetActionInterface, HttpPostActionInterface, Csrf
             throw new \RuntimeException('redirect_uri does not match any URI registered for this client.');
         }
 
+        // Re-checked on every sign-in, not only at registration: clients registered before
+        // the allowlist was configured must not keep receiving codes for other hosts.
+        if (!$this->redirectUriPolicy->isHostAllowed($redirectUri)) {
+            throw new \RuntimeException('redirect_uri points to a host this store does not allow.');
+        }
+
         return [
             'client_id' => $clientId,
             'redirect_uri' => $redirectUri,
             'code_challenge' => $codeChallenge,
             'code_challenge_method' => $codeChallengeMethod,
             'state' => $state,
+            'client_name' => (string)$client->getClientName(),
         ];
     }
 
@@ -173,7 +188,7 @@ class Authorize implements HttpGetActionInterface, HttpPostActionInterface, Csrf
      */
     private function handleLogin(array $params): ResultInterface
     {
-        $ipAddress = (string)$this->request->getClientIp();
+        $ipAddress = $this->clientIpResolver->resolve();
 
         if ($this->rateLimiter->isBlocked($ipAddress)) {
             return $this->htmlResult('Too many login attempts. Please try again later.', 429);
@@ -232,7 +247,7 @@ class Authorize implements HttpGetActionInterface, HttpPostActionInterface, Csrf
 
         $this->logger->info(sprintf('oauth/authorize: admin id %d authenticated', $adminUserId));
 
-        return $this->issueAuthCode($params, $adminUserId);
+        return $this->completeSignIn($params, $adminUserId);
     }
 
     /**
@@ -243,7 +258,7 @@ class Authorize implements HttpGetActionInterface, HttpPostActionInterface, Csrf
      */
     private function handleTwoFactor(array $params): ResultInterface
     {
-        $ipAddress = (string)$this->request->getClientIp();
+        $ipAddress = $this->clientIpResolver->resolve();
 
         if ($this->rateLimiter->isBlocked($ipAddress)) {
             return $this->htmlResult('Too many login attempts. Please try again later.', 429);
@@ -275,6 +290,29 @@ class Authorize implements HttpGetActionInterface, HttpPostActionInterface, Csrf
             sprintf('oauth/authorize: admin id %d authenticated (password + 2FA)', $adminUserId)
         );
 
+        return $this->completeSignIn($params, $adminUserId);
+    }
+
+    /**
+     * Final gate after all credentials passed: an admin whose expired password Magento
+     * forces them to change gets no code until they change it in the Admin panel.
+     *
+     * @param array $params OAuth params resolved by resolveAuthorizeParams().
+     * @param int $adminUserId Fully authenticated admin user id.
+     */
+    private function completeSignIn(array $params, int $adminUserId): ResultInterface
+    {
+        if ($this->passwordExpiryCheck->isChangeRequired($adminUserId)) {
+            $this->logger->warning(
+                sprintf('oauth/authorize: admin id %d must change an expired password first', $adminUserId)
+            );
+
+            return $this->renderLoginForm(
+                $params,
+                'Your password has expired. Sign in to the Magento Admin panel to set a new one, then try again.'
+            );
+        }
+
         return $this->issueAuthCode($params, $adminUserId);
     }
 
@@ -290,7 +328,7 @@ class Authorize implements HttpGetActionInterface, HttpPostActionInterface, Csrf
         $code = bin2hex(random_bytes(32));
 
         $authCode = $this->authCodeFactory->create();
-        $authCode->setCode($code);
+        $authCode->setCode($this->secretHasher->hash($code));
         $authCode->setClientId($params['client_id']);
         $authCode->setAdminUserId($adminUserId);
         $authCode->setCodeChallenge($params['code_challenge']);
@@ -391,6 +429,8 @@ HTML;
             ? '<div class="error">' . $this->escape($error) . '</div>'
             : '';
         $hostHtml = $this->escape($this->request->getHttpHost());
+        $clientHtml = $this->escape($params['client_name'] !== '' ? $params['client_name'] : 'Unnamed client');
+        $targetHtml = $this->escape($this->redirectUriPolicy->describe($params['redirect_uri']));
         $headingHtml = $this->escape($heading);
         $noteHtml = $this->escape($note);
 
@@ -426,6 +466,14 @@ h1 {
     margin-bottom: 6px;
 }
 .sub { color: #777; font-size: 13px; text-align: center; margin-bottom: 12px; }
+.client {
+    display: grid; grid-template-columns: auto 1fr; gap: 4px 12px;
+    background: #f8f8f8; border: 1px solid #e3e3e3; padding: 10px 12px;
+    font-size: 13px; margin-bottom: 10px;
+}
+.client dt { color: #777; }
+.client dd { font-weight: 600; word-break: break-all; }
+.warn { color: #777; font-size: 12px; line-height: 1.5; text-align: center; margin-bottom: 16px; }
 .note {
     color: #777; font-size: 13px; line-height: 1.5; text-align: center;
     margin-bottom: 28px;
@@ -458,6 +506,12 @@ button:hover { background: #ba4000; border-color: #ba4000; }
 </svg>
 <h1>{$headingHtml}</h1>
 <p class="sub">An MCP client is requesting access to your store {$hostHtml}.</p>
+<dl class="client">
+<dt>Client</dt><dd>{$clientHtml}</dd>
+<dt>Access is sent to</dt><dd>{$targetHtml}</dd>
+</dl>
+<p class="warn">Only continue if you started this connection yourself and recognize this address.
+The client name is self-reported; the address above is where your access will go.</p>
 <p class="note">{$noteHtml}</p>
 {$errorHtml}
 <form method="post">

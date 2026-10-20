@@ -4,44 +4,40 @@ declare(strict_types=1);
 
 namespace Yu\McpServer\Model\Auth;
 
-use Magento\Framework\App\CacheInterface;
-
 /**
  * Throttles repeated failed login attempts against Controller/Oauth/Authorize.php by IP.
  *
- * This is deliberately separate from whatever lockout Magento's own admin login already
- * applies — /mcp/oauth/authorize is a new, unauthenticated attack surface reachable by
- * anyone, and needs its own guard rather than relying solely on Auth::login()'s protections.
+ * This works alongside Magento's own per-account lockout (see etc/frontend/events.xml):
+ * /mcp/oauth/authorize is an unauthenticated attack surface reachable by anyone, and an IP
+ * limit also slows down guessing spread across many accounts.
  */
 class LoginRateLimiter
 {
-    private const CACHE_TAG = 'MCP_OAUTH_LOGIN';
     private const MAX_ATTEMPTS = 5;
     private const WINDOW_SECONDS = 900;
 
-    public function __construct(private readonly CacheInterface $cache)
+    public function __construct(private readonly FixedWindowCounter $counter)
     {
     }
 
     /**
-     * Whether this IP has exceeded the allowed number of recent failed attempts.
+     * Whether this IP has used up its failed attempts for the current window.
      *
      * @param string $ipAddress Caller's IP address.
      */
     public function isBlocked(string $ipAddress): bool
     {
-        return $this->getAttempts($ipAddress) >= self::MAX_ATTEMPTS;
+        return $this->counter->current($this->bucket($ipAddress), self::WINDOW_SECONDS) >= self::MAX_ATTEMPTS;
     }
 
     /**
-     * Records a failed login attempt for this IP.
+     * Records one failed login attempt for this IP.
      *
      * @param string $ipAddress Caller's IP address.
      */
     public function registerFailure(string $ipAddress): void
     {
-        $attempts = $this->getAttempts($ipAddress) + 1;
-        $this->cache->save((string)$attempts, $this->cacheId($ipAddress), [self::CACHE_TAG], self::WINDOW_SECONDS);
+        $this->counter->increment($this->bucket($ipAddress), self::WINDOW_SECONDS);
     }
 
     /**
@@ -51,28 +47,16 @@ class LoginRateLimiter
      */
     public function reset(string $ipAddress): void
     {
-        $this->cache->remove($this->cacheId($ipAddress));
+        $this->counter->reset($this->bucket($ipAddress), self::WINDOW_SECONDS);
     }
 
     /**
-     * Current number of recent failed attempts recorded for this IP.
+     * Counter bucket for this IP.
      *
      * @param string $ipAddress Caller's IP address.
      */
-    private function getAttempts(string $ipAddress): int
+    private function bucket(string $ipAddress): string
     {
-        $cached = $this->cache->load($this->cacheId($ipAddress));
-
-        return $cached !== false ? (int)$cached : 0;
-    }
-
-    /**
-     * Cache key for this IP's failure counter.
-     *
-     * @param string $ipAddress Caller's IP address.
-     */
-    private function cacheId(string $ipAddress): string
-    {
-        return 'mcp_oauth_login_' . sha1($ipAddress);
+        return 'login|' . $ipAddress;
     }
 }

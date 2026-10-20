@@ -10,16 +10,20 @@ use Magento\Catalog\Model\ResourceModel\Product\Collection;
 use Magento\Catalog\Model\ResourceModel\Product\CollectionFactory;
 use PHPUnit\Framework\TestCase;
 use Yu\McpServer\Model\Auth\AdminContext;
+use Yu\McpServer\Model\Tools\Catalog\StorefrontScope;
 use Yu\McpServer\Model\Tools\Product\SearchProducts;
+use Yu\McpServer\Test\Unit\Model\Tools\Catalog\StorefrontScopeMockTrait;
 
 class SearchProductsTest extends TestCase
 {
+    use StorefrontScopeMockTrait;
+
     /**
      * product_search is a public tool and must not require an ACL resource.
      */
     public function testRequiresNoAclResource(): void
     {
-        $tool = new SearchProducts($this->createMock(CollectionFactory::class));
+        $tool = new SearchProducts($this->createMock(CollectionFactory::class), $this->storefrontScope());
 
         $this->assertNull($tool->getRequiredAclResource());
     }
@@ -43,7 +47,7 @@ class SearchProductsTest extends TestCase
         $collectionFactory = $this->createMock(CollectionFactory::class);
         $collectionFactory->method('create')->willReturn($collection);
 
-        $tool = new SearchProducts($collectionFactory);
+        $tool = new SearchProducts($collectionFactory, $this->storefrontScope());
 
         $result = $tool->execute(['query' => 'shirt']);
 
@@ -54,31 +58,34 @@ class SearchProductsTest extends TestCase
     }
 
     /**
-     * The customer view: anonymous searches must push an enabled-only status filter into
-     * the collection, so disabled products never reach the results.
+     * The customer view: anonymous searches must push the storefront filters (enabled,
+     * visible in search, this website) into the collection, so hidden products never
+     * reach the results.
      */
-    public function testAnonymousSearchFiltersToEnabledProducts(): void
+    public function testAnonymousSearchFiltersToStorefrontProducts(): void
     {
-        $statusFiltered = false;
+        $filters = [];
         $collection = $this->createMock(Collection::class);
         $collection->method('addAttributeToSelect')->willReturnSelf();
         $collection->method('addAttributeToFilter')->willReturnCallback(
-            function ($attribute, $condition = null) use (&$statusFiltered, $collection) {
-                if ($attribute === 'status' && $condition === Status::STATUS_ENABLED) {
-                    $statusFiltered = true;
+            function ($attribute, $condition = null) use (&$filters, $collection) {
+                if (is_string($attribute)) {
+                    $filters[$attribute] = $condition;
                 }
                 return $collection;
             }
         );
+        $collection->expects($this->once())->method('addWebsiteFilter')->with([1]);
         $collection->method('setPageSize')->willReturnSelf();
         $collection->method('getIterator')->willReturn(new \ArrayIterator([]));
 
         $collectionFactory = $this->createMock(CollectionFactory::class);
         $collectionFactory->method('create')->willReturn($collection);
 
-        (new SearchProducts($collectionFactory))->execute(['query' => 'shirt']);
+        (new SearchProducts($collectionFactory, $this->storefrontScope()))->execute(['query' => 'shirt']);
 
-        $this->assertTrue($statusFiltered, 'anonymous search must filter status = enabled');
+        $this->assertSame(Status::STATUS_ENABLED, $filters['status'] ?? null);
+        $this->assertSame(['in' => StorefrontScope::VISIBLE_IN_SEARCH], $filters['visibility'] ?? null);
     }
 
     /**
@@ -97,17 +104,18 @@ class SearchProductsTest extends TestCase
         $collection->method('addAttributeToSelect')->willReturnSelf();
         $collection->method('addAttributeToFilter')->willReturnCallback(
             function ($attribute) use ($collection) {
-                $this->assertNotSame('status', $attribute, 'admin view must not filter by status');
+                $this->assertNotContains($attribute, ['status', 'visibility'], 'admin view must not filter');
                 return $collection;
             }
         );
+        $collection->expects($this->never())->method('addWebsiteFilter');
         $collection->method('setPageSize')->willReturnSelf();
         $collection->method('getIterator')->willReturn(new \ArrayIterator([$product]));
 
         $collectionFactory = $this->createMock(CollectionFactory::class);
         $collectionFactory->method('create')->willReturn($collection);
 
-        $result = (new SearchProducts($collectionFactory))->executeWithContext(
+        $result = (new SearchProducts($collectionFactory, $this->storefrontScope()))->executeWithContext(
             ['query' => 'hidden'],
             new AdminContext(1, ['Magento_Catalog::products'])
         );
@@ -124,7 +132,7 @@ class SearchProductsTest extends TestCase
     public function testThrowsWhenQueryArgumentIsMissing(): void
     {
         $collectionFactory = $this->createMock(CollectionFactory::class);
-        $tool = new SearchProducts($collectionFactory);
+        $tool = new SearchProducts($collectionFactory, $this->storefrontScope());
 
         $this->expectException(\InvalidArgumentException::class);
 
@@ -145,7 +153,7 @@ class SearchProductsTest extends TestCase
         $collectionFactory = $this->createMock(CollectionFactory::class);
         $collectionFactory->method('create')->willReturn($collection);
 
-        $tool = new SearchProducts($collectionFactory);
+        $tool = new SearchProducts($collectionFactory, $this->storefrontScope());
 
         $result = $tool->execute(['query' => 'nonexistent']);
 

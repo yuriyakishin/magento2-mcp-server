@@ -13,9 +13,12 @@ use Magento\Sales\Model\ResourceModel\Order\Item\Collection as OrderItemCollecti
 use Magento\Sales\Model\ResourceModel\Order\Item\CollectionFactory as OrderItemCollectionFactory;
 use PHPUnit\Framework\TestCase;
 use Yu\McpServer\Model\Tools\Sales\GetSalesByCategory;
+use Yu\McpServer\Test\Unit\Model\StoreTimeMockTrait;
 
 class GetSalesByCategoryTest extends TestCase
 {
+    use StoreTimeMockTrait;
+
     /**
      * Per-category sales are order data — the tool must require the Sales ACL resource.
      */
@@ -24,7 +27,8 @@ class GetSalesByCategoryTest extends TestCase
         $tool = new GetSalesByCategory(
             $this->createMock(OrderItemCollectionFactory::class),
             $this->createMock(ProductCollectionFactory::class),
-            $this->createMock(CategoryCollectionFactory::class)
+            $this->createMock(CategoryCollectionFactory::class),
+            $this->storeTime()
         );
 
         $this->assertSame('Magento_Sales::sales', $tool->getRequiredAclResource());
@@ -43,7 +47,8 @@ class GetSalesByCategoryTest extends TestCase
         $tool = new GetSalesByCategory(
             $itemFactory,
             $this->createMock(ProductCollectionFactory::class),
-            $this->createMock(CategoryCollectionFactory::class)
+            $this->createMock(CategoryCollectionFactory::class),
+            $this->storeTime()
         );
 
         foreach ([[], ['created_from' => 'nope'], ['created_from' => '2026-06-01', 'limit' => -5]] as $arguments) {
@@ -80,7 +85,8 @@ class GetSalesByCategoryTest extends TestCase
         $tool = new GetSalesByCategory(
             $this->itemFactoryMock($items),
             $this->productFactoryMock($products),
-            $this->categoryFactoryMock($categories)
+            $this->categoryFactoryMock($categories),
+            $this->storeTime()
         );
 
         $result = $tool->execute(['created_from' => '2026-06-01']);
@@ -106,7 +112,8 @@ class GetSalesByCategoryTest extends TestCase
         $tool = new GetSalesByCategory(
             $this->itemFactoryMock([]),
             $productFactory,
-            $this->createMock(CategoryCollectionFactory::class)
+            $this->createMock(CategoryCollectionFactory::class),
+            $this->storeTime()
         );
 
         $result = $tool->execute(['created_from' => '2026-06-01']);

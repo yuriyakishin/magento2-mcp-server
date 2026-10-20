@@ -9,15 +9,18 @@ use Magento\Sales\Model\ResourceModel\Order\Collection as OrderCollection;
 use Magento\Sales\Model\ResourceModel\Order\CollectionFactory as OrderCollectionFactory;
 use PHPUnit\Framework\TestCase;
 use Yu\McpServer\Model\Tools\Sales\GetShippingMethodStats;
+use Yu\McpServer\Test\Unit\Model\StoreTimeMockTrait;
 
 class GetShippingMethodStatsTest extends TestCase
 {
+    use StoreTimeMockTrait;
+
     /**
      * Shipping usage is order data — the tool must require the Sales ACL resource.
      */
     public function testRequiresSalesAclResource(): void
     {
-        $tool = new GetShippingMethodStats($this->createMock(OrderCollectionFactory::class));
+        $tool = new GetShippingMethodStats($this->createMock(OrderCollectionFactory::class), $this->storeTime());
 
         $this->assertSame('Magento_Sales::sales', $tool->getRequiredAclResource());
         $this->assertSame('sales_shipping_stats', $tool->getName());
@@ -32,7 +35,7 @@ class GetShippingMethodStatsTest extends TestCase
         $factory = $this->createMock(OrderCollectionFactory::class);
         $factory->expects($this->never())->method('create');
 
-        $tool = new GetShippingMethodStats($factory);
+        $tool = new GetShippingMethodStats($factory, $this->storeTime());
 
         foreach ([[], ['created_from' => '01/06/2026']] as $arguments) {
             try {
@@ -85,7 +88,7 @@ class GetShippingMethodStatsTest extends TestCase
             ]),
         ];
 
-        $result = (new GetShippingMethodStats($this->factoryMock($orders)))
+        $result = (new GetShippingMethodStats($this->factoryMock($orders), $this->storeTime()))
             ->execute(['created_from' => '2026-06-01']);
 
         $this->assertCount(2, $result['methods']);

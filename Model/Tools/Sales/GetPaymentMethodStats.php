@@ -7,6 +7,7 @@ namespace Yu\McpServer\Model\Tools\Sales;
 use Magento\Sales\Model\Order;
 use Magento\Sales\Model\ResourceModel\Order\CollectionFactory as OrderCollectionFactory;
 use Magento\Sales\Model\ResourceModel\Order\Payment\CollectionFactory as PaymentCollectionFactory;
+use Yu\McpServer\Model\StoreTime;
 use Yu\McpServer\Model\ToolInterface;
 
 /**
@@ -20,7 +21,8 @@ class GetPaymentMethodStats implements ToolInterface
 
     public function __construct(
         private readonly OrderCollectionFactory $orderCollectionFactory,
-        private readonly PaymentCollectionFactory $paymentCollectionFactory
+        private readonly PaymentCollectionFactory $paymentCollectionFactory,
+        private readonly StoreTime $storeTime
     ) {
     }
 
@@ -39,7 +41,8 @@ class GetPaymentMethodStats implements ToolInterface
     {
         return 'Orders and revenue per PAYMENT method for a date range (per currency): which '
             . 'payment methods customers actually use and how much revenue each brings. '
-            . 'Canceled orders are excluded. Dates are compared in UTC. Typical use: "how do '
+            . 'Canceled orders are excluded. Dates are in store local time '
+            . '(store_info reports the timezone). Typical use: "how do '
             . 'customers pay?", "what share of revenue is cash on delivery?".';
     }
 
@@ -53,12 +56,12 @@ class GetPaymentMethodStats implements ToolInterface
             'properties' => [
                 'created_from' => [
                     'type' => 'string',
-                    'description' => 'Start of the period (inclusive), UTC, "YYYY-MM-DD" or '
+                    'description' => 'Start of the period (inclusive), store local time, "YYYY-MM-DD" or '
                         . '"YYYY-MM-DD HH:MM:SS".',
                 ],
                 'created_to' => [
                     'type' => 'string',
-                    'description' => 'End of the period (inclusive), UTC, "YYYY-MM-DD" '
+                    'description' => 'End of the period (inclusive), store local time, "YYYY-MM-DD" '
                         . '(whole day included) or "YYYY-MM-DD HH:MM:SS". Omit for "up to now".',
                 ],
             ],
@@ -83,7 +86,10 @@ class GetPaymentMethodStats implements ToolInterface
         $createdFrom = DateRange::requiredDate($arguments, 'created_from');
         $createdTo = DateRange::optionalDate($arguments, 'created_to');
 
-        [$orders, $truncated] = $this->ordersForPeriod($createdFrom, $createdTo);
+        [$orders, $truncated] = $this->ordersForPeriod(
+            $this->storeTime->toUtc($createdFrom),
+            $createdTo !== null ? $this->storeTime->toUtc($createdTo) : null
+        );
         $methods = $this->aggregateByMethod($orders);
 
         usort($methods, static fn (array $a, array $b) => $b['orders'] <=> $a['orders']);

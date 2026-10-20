@@ -11,9 +11,12 @@ use Magento\Sales\Api\Data\OrderInterface;
 use Magento\Sales\Api\OrderRepositoryInterface;
 use PHPUnit\Framework\TestCase;
 use Yu\McpServer\Model\Tools\Order\GetCustomerOrders;
+use Yu\McpServer\Test\Unit\Model\StoreTimeMockTrait;
 
 class GetCustomerOrdersTest extends TestCase
 {
+    use StoreTimeMockTrait;
+
     /**
      * order_list_by_customer exposes order data, so it must require the Sales ACL resource.
      */
@@ -21,7 +24,8 @@ class GetCustomerOrdersTest extends TestCase
     {
         $tool = new GetCustomerOrders(
             $this->createMock(OrderRepositoryInterface::class),
-            $this->createMock(SearchCriteriaBuilder::class)
+            $this->createMock(SearchCriteriaBuilder::class),
+            $this->storeTime()
         );
 
         $this->assertSame('Magento_Sales::sales', $tool->getRequiredAclResource());
@@ -51,7 +55,7 @@ class GetCustomerOrdersTest extends TestCase
         $orderRepository = $this->createMock(OrderRepositoryInterface::class);
         $orderRepository->method('getList')->with($searchCriteria)->willReturn($searchResults);
 
-        $tool = new GetCustomerOrders($orderRepository, $searchCriteriaBuilder);
+        $tool = new GetCustomerOrders($orderRepository, $searchCriteriaBuilder, $this->storeTime());
 
         $result = $tool->execute(['customer_email' => 'customer@example.com']);
 
@@ -67,7 +71,7 @@ class GetCustomerOrdersTest extends TestCase
         $orderRepository = $this->createMock(OrderRepositoryInterface::class);
         $searchCriteriaBuilder = $this->createMock(SearchCriteriaBuilder::class);
 
-        $tool = new GetCustomerOrders($orderRepository, $searchCriteriaBuilder);
+        $tool = new GetCustomerOrders($orderRepository, $searchCriteriaBuilder, $this->storeTime());
 
         $this->expectException(\InvalidArgumentException::class);
 
@@ -92,7 +96,7 @@ class GetCustomerOrdersTest extends TestCase
         $orderRepository = $this->createMock(OrderRepositoryInterface::class);
         $orderRepository->method('getList')->willReturn($searchResults);
 
-        $tool = new GetCustomerOrders($orderRepository, $searchCriteriaBuilder);
+        $tool = new GetCustomerOrders($orderRepository, $searchCriteriaBuilder, $this->storeTime());
 
         $this->expectException(\RuntimeException::class);
 

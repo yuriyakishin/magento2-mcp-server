@@ -14,7 +14,10 @@ use Magento\Framework\Controller\ResultFactory;
 use Magento\Framework\Controller\ResultInterface;
 use Magento\Framework\Exception\NoSuchEntityException;
 use Magento\Framework\Stdlib\DateTime\DateTime;
+use Yu\McpServer\Model\Auth\AdminUserStatus;
 use Yu\McpServer\Model\Oauth\AuthCodeRepository;
+use Yu\McpServer\Model\Oauth\SecretHasher;
+use Yu\McpServer\Model\Oauth\Token as OauthToken;
 use Yu\McpServer\Model\Oauth\TokenFactory;
 use Yu\McpServer\Model\Oauth\TokenRepository;
 
@@ -28,6 +31,7 @@ use Yu\McpServer\Model\Oauth\TokenRepository;
 class Token implements HttpPostActionInterface, CsrfAwareActionInterface
 {
     private const ACCESS_TOKEN_TTL_SECONDS = 3600;
+    private const REFRESH_TOKEN_TTL_SECONDS = 2592000;
 
     public function __construct(
         private readonly Http $request,
@@ -35,7 +39,9 @@ class Token implements HttpPostActionInterface, CsrfAwareActionInterface
         private readonly AuthCodeRepository $authCodeRepository,
         private readonly TokenRepository $tokenRepository,
         private readonly TokenFactory $tokenFactory,
-        private readonly DateTime $dateTime
+        private readonly DateTime $dateTime,
+        private readonly AdminUserStatus $adminUserStatus,
+        private readonly SecretHasher $secretHasher
     ) {
     }
 
@@ -118,6 +124,10 @@ class Token implements HttpPostActionInterface, CsrfAwareActionInterface
         $authCode->setUsedAt(date('Y-m-d H:i:s', $now));
         $this->authCodeRepository->save($authCode);
 
+        if (!$this->adminUserStatus->isActive((int)$authCode->getAdminUserId())) {
+            return $this->oauthError('invalid_grant', 'The admin account is inactive or deleted.');
+        }
+
         return $this->issueTokenPair((int)$authCode->getAdminUserId(), $clientId);
     }
 
@@ -143,35 +153,64 @@ class Token implements HttpPostActionInterface, CsrfAwareActionInterface
             return $this->oauthError('invalid_grant', 'The refresh token is invalid or has been revoked.');
         }
 
-        $token->setRevokedAt(date('Y-m-d H:i:s', $this->dateTime->gmtTimestamp()));
+        $now = $this->dateTime->gmtTimestamp();
+        if ($this->refreshExpiresAt($token) <= $now) {
+            return $this->oauthError('invalid_grant', 'The refresh token has expired.');
+        }
+
+        $token->setRevokedAt(date('Y-m-d H:i:s', $now));
         $this->tokenRepository->save($token);
+
+        if (!$this->adminUserStatus->isActive((int)$token->getAdminUserId())) {
+            return $this->oauthError('invalid_grant', 'The admin account is inactive or deleted.');
+        }
 
         return $this->issueTokenPair((int)$token->getAdminUserId(), $clientId);
     }
 
     /**
-     * Persists a new access/refresh token pair and renders the OAuth token response.
+     * Refresh token expiry as a GMT timestamp. Rows issued before refresh_expires_at
+     * existed fall back to their creation time plus the regular lifetime.
+     *
+     * @param OauthToken $token Token pair being refreshed.
+     */
+    private function refreshExpiresAt(OauthToken $token): int
+    {
+        $expiresAt = $token->getRefreshExpiresAt();
+        if ($expiresAt !== null) {
+            return (int)strtotime((string)$expiresAt);
+        }
+
+        return (int)strtotime((string)$token->getCreatedAt()) + self::REFRESH_TOKEN_TTL_SECONDS;
+    }
+
+    /**
+     * Persists a new access/refresh token pair and renders the OAuth token response. Only
+     * the digests are stored; the raw values exist solely in this response.
      *
      * @param int $adminUserId Admin user id the token pair is bound to.
      * @param string $clientId OAuth client id the token pair is issued for.
      */
     private function issueTokenPair(int $adminUserId, string $clientId): Json
     {
+        $accessToken = bin2hex(random_bytes(32));
+        $refreshToken = bin2hex(random_bytes(32));
+
         $token = $this->tokenFactory->create();
-        $token->setAccessToken(bin2hex(random_bytes(32)));
-        $token->setRefreshToken(bin2hex(random_bytes(32)));
+        $token->setAccessToken($this->secretHasher->hash($accessToken));
+        $token->setRefreshToken($this->secretHasher->hash($refreshToken));
         $token->setClientId($clientId);
         $token->setAdminUserId($adminUserId);
-        $token->setExpiresAt(
-            date('Y-m-d H:i:s', $this->dateTime->gmtTimestamp() + self::ACCESS_TOKEN_TTL_SECONDS)
-        );
+        $now = $this->dateTime->gmtTimestamp();
+        $token->setExpiresAt(date('Y-m-d H:i:s', $now + self::ACCESS_TOKEN_TTL_SECONDS));
+        $token->setRefreshExpiresAt(date('Y-m-d H:i:s', $now + self::REFRESH_TOKEN_TTL_SECONDS));
         $this->tokenRepository->save($token);
 
         return $this->jsonResult([
-            'access_token' => $token->getAccessToken(),
+            'access_token' => $accessToken,
             'token_type' => 'Bearer',
             'expires_in' => self::ACCESS_TOKEN_TTL_SECONDS,
-            'refresh_token' => $token->getRefreshToken(),
+            'refresh_token' => $refreshToken,
         ], 200);
     }
 

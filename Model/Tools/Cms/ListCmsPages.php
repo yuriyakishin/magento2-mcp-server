@@ -5,6 +5,7 @@ declare(strict_types=1);
 namespace Yu\McpServer\Model\Tools\Cms;
 
 use Magento\Cms\Model\ResourceModel\Page\CollectionFactory as PageCollectionFactory;
+use Yu\McpServer\Model\StoreTime;
 use Yu\McpServer\Model\ToolInterface;
 
 /**
@@ -18,7 +19,8 @@ class ListCmsPages implements ToolInterface
     private const MAX_LIMIT = 200;
 
     public function __construct(
-        private readonly PageCollectionFactory $pageCollectionFactory
+        private readonly PageCollectionFactory $pageCollectionFactory,
+        private readonly StoreTime $storeTime
     ) {
     }
 
@@ -96,8 +98,8 @@ class ListCmsPages implements ToolInterface
                 'identifier' => (string)$page->getData('identifier'),
                 'title' => (string)$page->getData('title'),
                 'is_active' => (bool)$page->getData('is_active'),
-                'created_at' => (string)$page->getData('creation_time'),
-                'updated_at' => (string)$page->getData('update_time'),
+                'created_at' => (string)$this->storeTime->toLocal((string)$page->getData('creation_time')),
+                'updated_at' => (string)$this->storeTime->toLocal((string)$page->getData('update_time')),
             ];
         }
 

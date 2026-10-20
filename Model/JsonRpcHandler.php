@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 namespace Yu\McpServer\Model;
 
+use Magento\Framework\Exception\LocalizedException;
 use Psr\Log\LoggerInterface;
 use Yu\McpServer\Exception\ForbiddenException;
 use Yu\McpServer\Exception\McpException;
@@ -28,14 +29,16 @@ class JsonRpcHandler
         private readonly ToolRegistry $toolRegistry,
         private readonly Config $config,
         private readonly LoggerInterface $logger,
-        private readonly PromptRegistry $promptRegistry
+        private readonly PromptRegistry $promptRegistry,
+        private readonly ServerVersion $serverVersion
     ) {
     }
 
     /**
      * Dispatches a batch (array) of JSON-RPC messages and collects their responses.
      *
-     * @param array[] $messages Decoded JSON-RPC requests/notifications.
+     * @param array $messages Decoded batch elements; anything that is not a JSON object gets an
+     *     "Invalid Request" response of its own.
      * @param AdminContext|null $adminContext The caller's resolved identity, or null for
      *     an anonymous request (no bearer token was supplied).
      * @return array[] Responses, in the same order, with notifications omitted.
@@ -47,6 +50,20 @@ class JsonRpcHandler
     {
         $responses = [];
         foreach ($messages as $message) {
+            // JSON-RPC 2.0 §6: an element that is not a request object gets its own
+            // "Invalid Request" response instead of failing the whole batch.
+            if (!is_array($message) || $message === [] || array_is_list($message)) {
+                $responses[] = [
+                    'jsonrpc' => '2.0',
+                    'id' => null,
+                    'error' => [
+                        'code' => self::INVALID_REQUEST,
+                        'message' => 'Invalid Request',
+                    ],
+                ];
+                continue;
+            }
+
             $response = $this->handle($message, $adminContext);
             if ($response !== null) {
                 $responses[] = $response;
@@ -172,7 +189,7 @@ class JsonRpcHandler
             ],
             'serverInfo' => [
                 'name' => 'yu-mcp-server',
-                'version' => '1.0.0',
+                'version' => $this->serverVersion->get(),
             ],
         ];
     }
@@ -280,10 +297,13 @@ class JsonRpcHandler
                 'isError' => false,
             ];
         } catch (\Throwable $e) {
+            $incidentId = bin2hex(random_bytes(4));
             $this->logger->warning(sprintf(
-                'tools/call "%s" failed in %.3fs: %s',
+                'tools/call "%s" failed in %.3fs [ref %s]: %s: %s',
                 $name,
                 microtime(true) - $startedAt,
+                $incidentId,
+                get_class($e),
                 $e->getMessage()
             ));
 
@@ -291,12 +311,49 @@ class JsonRpcHandler
                 'content' => [
                     [
                         'type' => 'text',
-                        'text' => $e->getMessage(),
+                        'text' => $this->clientErrorMessage($e, $name, $incidentId, $adminContext),
                     ],
                 ],
                 'isError' => true,
             ];
         }
+    }
+
+    /**
+     * The error text a tool failure shows to the client.
+     *
+     * Only messages written for the caller pass through: the two exception classes tools
+     * throw on purpose (matched exactly — PDOException and other library exceptions extend
+     * \RuntimeException and carry SQL, table names or file paths), plus Magento's business
+     * errors ("URL key already exists") for authenticated admins, who need them to fix a
+     * write request. Everything else becomes a generic message with a reference to the full
+     * entry in var/log/mcp.log.
+     *
+     * @param \Throwable $e Exception thrown by the tool.
+     * @param string $toolName Name of the failed tool.
+     * @param string $incidentId Reference written to the log next to the full message.
+     * @param AdminContext|null $adminContext The caller's resolved identity, or null for
+     *     an anonymous request.
+     */
+    private function clientErrorMessage(
+        \Throwable $e,
+        string $toolName,
+        string $incidentId,
+        ?AdminContext $adminContext
+    ): string {
+        if (in_array(get_class($e), [\InvalidArgumentException::class, \RuntimeException::class], true)) {
+            return $e->getMessage();
+        }
+        if ($adminContext !== null && $e instanceof LocalizedException) {
+            return $e->getMessage();
+        }
+
+        return sprintf(
+            'Tool "%s" failed with an internal error (reference %s). '
+                . 'The store administrator can find the details in the MCP server log.',
+            $toolName,
+            $incidentId
+        );
     }
 
     /**

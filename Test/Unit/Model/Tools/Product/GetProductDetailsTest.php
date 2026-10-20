@@ -15,9 +15,15 @@ use Magento\Store\Model\StoreManagerInterface;
 use PHPUnit\Framework\TestCase;
 use Yu\McpServer\Model\Auth\AdminContext;
 use Yu\McpServer\Model\Tools\Product\GetProductDetails;
+use Yu\McpServer\Test\Unit\Model\StoreTimeMockTrait;
+use Yu\McpServer\Test\Unit\Model\Tools\Catalog\StorefrontScopeMockTrait;
 
 class GetProductDetailsTest extends TestCase
 {
+    use StoreTimeMockTrait;
+
+    use StorefrontScopeMockTrait;
+
     /**
      * product_get is a public tool and must not require an ACL resource.
      */
@@ -25,7 +31,9 @@ class GetProductDetailsTest extends TestCase
     {
         $tool = new GetProductDetails(
             $this->createMock(ProductRepositoryInterface::class),
-            $this->createMock(StoreManagerInterface::class)
+            $this->createMock(StoreManagerInterface::class),
+            $this->storefrontScope(),
+            $this->storeTime()
         );
 
         $this->assertNull($tool->getRequiredAclResource());
@@ -40,7 +48,9 @@ class GetProductDetailsTest extends TestCase
     {
         $tool = new GetProductDetails(
             $this->createMock(ProductRepositoryInterface::class),
-            $this->createMock(StoreManagerInterface::class)
+            $this->createMock(StoreManagerInterface::class),
+            $this->storefrontScope(),
+            $this->storeTime()
         );
 
         foreach ([[], ['sku' => ''], ['sku' => '   '], ['sku' => 42]] as $arguments) {
@@ -65,7 +75,9 @@ class GetProductDetailsTest extends TestCase
 
         $tool = new GetProductDetails(
             $productRepository,
-            $this->createMock(StoreManagerInterface::class)
+            $this->createMock(StoreManagerInterface::class),
+            $this->storefrontScope(),
+            $this->storeTime()
         );
 
         $this->expectException(\RuntimeException::class);
@@ -89,6 +101,7 @@ class GetProductDetailsTest extends TestCase
         $product->method('getTypeId')->willReturn('simple');
         $product->method('getStatus')->willReturn(Status::STATUS_ENABLED);
         $product->method('getVisibility')->willReturn(Visibility::VISIBILITY_BOTH);
+        $product->method('getWebsiteIds')->willReturn([1]);
         $product->method('getPrice')->willReturn(19.99);
         $product->method('getWeight')->willReturn('1.5');
         $product->method('getCategoryIds')->willReturn(['3', '5']);
@@ -110,7 +123,7 @@ class GetProductDetailsTest extends TestCase
         $storeManager = $this->createMock(StoreManagerInterface::class);
         $storeManager->method('getStore')->willReturn($store);
 
-        $tool = new GetProductDetails($productRepository, $storeManager);
+        $tool = new GetProductDetails($productRepository, $storeManager, $this->storefrontScope(), $this->storeTime());
 
         $result = $tool->execute(['sku' => 'SKU-1']);
         $card = $result['product'];
@@ -140,12 +153,59 @@ class GetProductDetailsTest extends TestCase
         $productRepository = $this->createMock(ProductRepositoryInterface::class);
         $productRepository->method('get')->willReturn($product);
 
-        $tool = new GetProductDetails($productRepository, $this->createMock(StoreManagerInterface::class));
+        $tool = new GetProductDetails(
+            $productRepository,
+            $this->createMock(StoreManagerInterface::class),
+            $this->storefrontScope(),
+            $this->storeTime()
+        );
 
         $this->expectException(\RuntimeException::class);
         $this->expectExceptionMessage('Product with SKU "SKU-2" does not exist.');
 
         $tool->execute(['sku' => 'SKU-2']);
+    }
+
+    /**
+     * The customer view: an enabled product that has no page in this store — assigned to
+     * another website, or not visible individually — is missing for anonymous callers too.
+     *
+     * @dataProvider hiddenEnabledProductProvider
+     * @param int[] $websiteIds Websites the product is assigned to.
+     * @param int $visibility Product visibility.
+     */
+    public function testAnonymousCallerSeesHiddenEnabledProductAsMissing(array $websiteIds, int $visibility): void
+    {
+        $product = $this->createMock(Product::class);
+        $product->method('getStatus')->willReturn(Status::STATUS_ENABLED);
+        $product->method('getWebsiteIds')->willReturn($websiteIds);
+        $product->method('getVisibility')->willReturn($visibility);
+
+        $productRepository = $this->createMock(ProductRepositoryInterface::class);
+        $productRepository->method('get')->willReturn($product);
+
+        $tool = new GetProductDetails(
+            $productRepository,
+            $this->createMock(StoreManagerInterface::class),
+            $this->storefrontScope(),
+            $this->storeTime()
+        );
+
+        $this->expectException(\RuntimeException::class);
+        $this->expectExceptionMessage('Product with SKU "SKU-3" does not exist.');
+
+        $tool->execute(['sku' => 'SKU-3']);
+    }
+
+    /**
+     * @return array<string, array{0: int[], 1: int}>
+     */
+    public static function hiddenEnabledProductProvider(): array
+    {
+        return [
+            'other website' => [[2], Visibility::VISIBILITY_BOTH],
+            'not visible individually' => [[1], Visibility::VISIBILITY_NOT_VISIBLE],
+        ];
     }
 
     /**
@@ -170,7 +230,7 @@ class GetProductDetailsTest extends TestCase
         $storeManager = $this->createMock(StoreManagerInterface::class);
         $storeManager->method('getStore')->willReturn($store);
 
-        $tool = new GetProductDetails($productRepository, $storeManager);
+        $tool = new GetProductDetails($productRepository, $storeManager, $this->storefrontScope(), $this->storeTime());
 
         $result = $tool->executeWithContext(
             ['sku' => 'SKU-2'],

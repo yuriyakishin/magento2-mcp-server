@@ -11,9 +11,12 @@ use Magento\Sales\Model\ResourceModel\Order\Item\Collection as OrderItemCollecti
 use Magento\Sales\Model\ResourceModel\Order\Item\CollectionFactory as OrderItemCollectionFactory;
 use PHPUnit\Framework\TestCase;
 use Yu\McpServer\Model\Tools\Sales\GetSalesSummary;
+use Yu\McpServer\Test\Unit\Model\StoreTimeMockTrait;
 
 class GetSalesSummaryTest extends TestCase
 {
+    use StoreTimeMockTrait;
+
     /**
      * Aggregated revenue is order data — the tool must require the Sales ACL resource.
      */
@@ -21,7 +24,8 @@ class GetSalesSummaryTest extends TestCase
     {
         $tool = new GetSalesSummary(
             $this->createMock(OrderCollectionFactory::class),
-            $this->createMock(OrderItemCollectionFactory::class)
+            $this->createMock(OrderItemCollectionFactory::class),
+            $this->storeTime()
         );
 
         $this->assertSame('Magento_Sales::sales', $tool->getRequiredAclResource());
@@ -39,7 +43,8 @@ class GetSalesSummaryTest extends TestCase
 
         $tool = new GetSalesSummary(
             $orderCollectionFactory,
-            $this->createMock(OrderItemCollectionFactory::class)
+            $this->createMock(OrderItemCollectionFactory::class),
+            $this->storeTime()
         );
 
         $invalid = [
@@ -93,7 +98,8 @@ class GetSalesSummaryTest extends TestCase
 
         $tool = new GetSalesSummary(
             $this->orderCollectionFactoryMock($orders),
-            $this->itemCollectionFactoryMock($items)
+            $this->itemCollectionFactoryMock($items),
+            $this->storeTime()
         );
 
         $result = $tool->execute(['created_from' => '2026-06-01', 'created_to' => '2026-06-30']);
@@ -120,7 +126,7 @@ class GetSalesSummaryTest extends TestCase
         $itemCollectionFactory = $this->createMock(OrderItemCollectionFactory::class);
         $itemCollectionFactory->expects($this->never())->method('create');
 
-        $tool = new GetSalesSummary($this->orderCollectionFactoryMock([]), $itemCollectionFactory);
+        $tool = new GetSalesSummary($this->orderCollectionFactoryMock([]), $itemCollectionFactory, $this->storeTime());
 
         $result = $tool->execute(['created_from' => '2026-06-01', 'top_products' => 0]);
 

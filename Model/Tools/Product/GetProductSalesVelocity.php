@@ -9,6 +9,7 @@ use Magento\CatalogInventory\Api\StockRegistryInterface;
 use Magento\Framework\Exception\NoSuchEntityException;
 use Magento\Framework\Stdlib\DateTime\DateTime;
 use Magento\Sales\Model\ResourceModel\Order\Item\CollectionFactory as OrderItemCollectionFactory;
+use Yu\McpServer\Model\StoreTime;
 use Yu\McpServer\Model\ToolInterface;
 
 /**
@@ -25,7 +26,8 @@ class GetProductSalesVelocity implements ToolInterface
         private readonly OrderItemCollectionFactory $orderItemCollectionFactory,
         private readonly ProductRepositoryInterface $productRepository,
         private readonly StockRegistryInterface $stockRegistry,
-        private readonly DateTime $dateTime
+        private readonly DateTime $dateTime,
+        private readonly StoreTime $storeTime
     ) {
     }
 
@@ -129,7 +131,7 @@ class GetProductSalesVelocity implements ToolInterface
         if ($perDay > 0 && $stockQty !== null && $stockQty > 0) {
             $daysLeft = (int)floor($stockQty / $perDay);
             $result['estimated_days_left'] = $daysLeft;
-            $result['estimated_stockout_date'] = date('Y-m-d', $now + $daysLeft * 86400);
+            $result['estimated_stockout_date'] = $this->storeTime->localDate($now + $daysLeft * 86400);
         }
 
         return $result;

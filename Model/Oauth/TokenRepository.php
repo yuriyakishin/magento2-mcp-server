@@ -8,13 +8,15 @@ use Magento\Framework\Exception\NoSuchEntityException;
 use Yu\McpServer\Model\ResourceModel\Oauth\Token as TokenResource;
 
 /**
- * Persists and loads OAuth access/refresh tokens (mcp_oauth_token).
+ * Persists and loads OAuth access/refresh tokens (mcp_oauth_token). The table holds only
+ * SecretHasher digests; lookups take the raw value the client sent.
  */
 class TokenRepository
 {
     public function __construct(
         private readonly TokenResource $tokenResource,
-        private readonly TokenFactory $tokenFactory
+        private readonly TokenFactory $tokenFactory,
+        private readonly SecretHasher $secretHasher
     ) {
     }
 
@@ -30,12 +32,12 @@ class TokenRepository
     }
 
     /**
-     * @param string $accessToken Access token value to look up.
+     * @param string $accessToken Raw access token value to look up.
      * @throws NoSuchEntityException if no token matches this access token value.
      */
     public function getByAccessToken(string $accessToken): Token
     {
-        $entityId = $this->tokenResource->getIdByAccessToken($accessToken);
+        $entityId = $this->tokenResource->getIdByAccessToken($this->secretHasher->hash($accessToken));
         if ($entityId === null) {
             throw new NoSuchEntityException(__('Access token was not found.'));
         }
@@ -47,12 +49,12 @@ class TokenRepository
     }
 
     /**
-     * @param string $refreshToken Refresh token value to look up.
+     * @param string $refreshToken Raw refresh token value to look up.
      * @throws NoSuchEntityException if no token matches this refresh token value.
      */
     public function getByRefreshToken(string $refreshToken): Token
     {
-        $entityId = $this->tokenResource->getIdByRefreshToken($refreshToken);
+        $entityId = $this->tokenResource->getIdByRefreshToken($this->secretHasher->hash($refreshToken));
         if ($entityId === null) {
             throw new NoSuchEntityException(__('Refresh token was not found.'));
         }

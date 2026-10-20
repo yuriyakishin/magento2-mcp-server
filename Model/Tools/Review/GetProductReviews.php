@@ -8,21 +8,33 @@ use Magento\Catalog\Api\ProductRepositoryInterface;
 use Magento\Framework\Exception\NoSuchEntityException;
 use Magento\Review\Model\ResourceModel\Review\CollectionFactory;
 use Magento\Review\Model\Review;
-use Yu\McpServer\Model\ToolInterface;
+use Magento\Store\Model\StoreManagerInterface;
+use Yu\McpServer\Model\Auth\AdminContext;
+use Yu\McpServer\Model\ContextAwareToolInterface;
+use Yu\McpServer\Model\StoreTime;
+use Yu\McpServer\Model\Tools\Catalog\StorefrontScope;
 
 /**
  * Returns APPROVED product reviews only — pending and rejected reviews are moderation
  * data, not public content. (A future approve-reviews write tool is a separate,
  * ACL-gated decision; this tool must stay approved-only regardless.)
+ *
+ * Two storefronts (see ContextAwareToolInterface): anonymous callers get the reviews shown
+ * on the product's page in this store — a product without such a page is reported as
+ * missing (see StorefrontScope), and only reviews published to this store are returned.
+ * An admin with the catalog ACL gets the approved reviews of any product, from all stores.
  */
-class GetProductReviews implements ToolInterface
+class GetProductReviews implements ContextAwareToolInterface
 {
     private const DEFAULT_LIMIT = 10;
     private const MAX_LIMIT = 50;
 
     public function __construct(
         private readonly ProductRepositoryInterface $productRepository,
-        private readonly CollectionFactory $reviewCollectionFactory
+        private readonly CollectionFactory $reviewCollectionFactory,
+        private readonly StorefrontScope $storefrontScope,
+        private readonly StoreManagerInterface $storeManager,
+        private readonly StoreTime $storeTime
     ) {
     }
 
@@ -40,7 +52,8 @@ class GetProductReviews implements ToolInterface
     public function getDescription(): string
     {
         return 'Returns approved customer reviews for a product by SKU: title, text, '
-            . 'reviewer nickname, date and star rating (1-5), newest first.';
+            . 'reviewer nickname, date and star rating (1-5), newest first. Anonymous '
+            . 'callers get the reviews shown on the product page in this store.';
     }
 
     /**
@@ -73,11 +86,22 @@ class GetProductReviews implements ToolInterface
     }
 
     /**
-     * @param array $arguments Expects `sku` (string, required) and optional `limit` (int).
-     * @return array{sku: string, reviews: array<int, array<string, mixed>>, count: int}
+     * @inheritDoc
      */
     public function execute(array $arguments): array
     {
+        return $this->executeWithContext($arguments, null);
+    }
+
+    /**
+     * @param array $arguments Expects `sku` (string, required) and optional `limit` (int).
+     * @param AdminContext|null $adminContext The caller's resolved identity, or null for
+     *     an anonymous request (no bearer token was supplied).
+     * @return array{sku: string, reviews: array<int, array<string, mixed>>, count: int}
+     */
+    public function executeWithContext(array $arguments, ?AdminContext $adminContext): array
+    {
+        $adminView = $adminContext !== null && $adminContext->hasAclResource('Magento_Catalog::products');
         $sku = $arguments['sku'] ?? null;
         if (!is_string($sku) || trim($sku) === '') {
             throw new \InvalidArgumentException('Argument "sku" is required and must be a non-empty string.');
@@ -91,9 +115,18 @@ class GetProductReviews implements ToolInterface
             throw new \RuntimeException(sprintf('Product with SKU "%s" does not exist.', $sku));
         }
 
+        if (!$adminView
+            && !$this->storefrontScope->isProductVisible($product, StorefrontScope::VISIBLE_INDIVIDUALLY)
+        ) {
+            throw new \RuntimeException(sprintf('Product with SKU "%s" does not exist.', $sku));
+        }
+
         $collection = $this->reviewCollectionFactory->create();
         $collection->addStatusFilter(Review::STATUS_APPROVED);
         $collection->addEntityFilter('product', (int)$product->getId());
+        if (!$adminView) {
+            $collection->addStoreFilter((int)$this->storeManager->getStore()->getId());
+        }
         $collection->setDateOrder();
         $collection->setPageSize($limit);
         $collection->addRateVotes();
@@ -104,7 +137,7 @@ class GetProductReviews implements ToolInterface
                 'title' => $review->getData('title'),
                 'text' => $review->getData('detail'),
                 'nickname' => $review->getData('nickname'),
-                'created_at' => $review->getData('created_at'),
+                'created_at' => $this->storeTime->toLocal($review->getData('created_at')),
                 'rating' => $this->averageRating($review->getData('rating_votes')),
             ];
         }

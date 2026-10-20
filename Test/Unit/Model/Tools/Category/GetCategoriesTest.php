@@ -10,6 +10,7 @@ use Magento\Catalog\Model\ResourceModel\Category\CollectionFactory;
 use Magento\Store\Model\Store;
 use Magento\Store\Model\StoreManagerInterface;
 use PHPUnit\Framework\TestCase;
+use Yu\McpServer\Model\Auth\AdminContext;
 use Yu\McpServer\Model\Tools\Category\GetCategories;
 
 class GetCategoriesTest extends TestCase
@@ -67,17 +68,35 @@ class GetCategoriesTest extends TestCase
     /**
      * include_inactive = true must skip the is_active filter.
      */
-    public function testIncludeInactiveSkipsActivityFilter(): void
+    public function testIncludeInactiveSkipsActivityFilterForCategoryAdmin(): void
     {
         $collection = $this->mockCollection([]);
         $collection->expects($this->never())->method('addAttributeToFilter');
 
         $tool = new GetCategories($this->mockCollectionFactory($collection), $this->mockStoreManager(2));
 
-        $result = $tool->execute(['include_inactive' => true]);
+        $result = $tool->executeWithContext(
+            ['include_inactive' => true],
+            new AdminContext(1, ['Magento_Catalog::categories'])
+        );
 
         $this->assertSame([], $result['categories']);
         $this->assertSame(0, $result['count']);
+    }
+
+    /**
+     * The customer view: anonymous callers (and admins without the category ACL) can't
+     * unhide disabled categories — include_inactive is ignored and the filter stays.
+     */
+    public function testIncludeInactiveIgnoredWithoutCategoryAcl(): void
+    {
+        foreach ([null, new AdminContext(1, ['Magento_Sales::sales'])] as $adminContext) {
+            $collection = $this->mockCollection([]);
+            $collection->expects($this->once())->method('addAttributeToFilter')->with('is_active', 1);
+
+            $tool = new GetCategories($this->mockCollectionFactory($collection), $this->mockStoreManager(2));
+            $tool->executeWithContext(['include_inactive' => true], $adminContext);
+        }
     }
 
     /**

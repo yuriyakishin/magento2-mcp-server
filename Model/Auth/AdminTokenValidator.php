@@ -21,13 +21,15 @@ class AdminTokenValidator
         private readonly TokenRepository $tokenRepository,
         private readonly AclRetriever $aclRetriever,
         private readonly RoleCollectionFactory $roleCollectionFactory,
-        private readonly DateTime $dateTime
+        private readonly DateTime $dateTime,
+        private readonly AdminUserStatus $adminUserStatus
     ) {
     }
 
     /**
      * @param string $bearerToken Raw access token value from the Authorization header.
-     * @throws UnauthorizedException if the token is unknown, revoked, or expired.
+     * @throws UnauthorizedException if the token is unknown, revoked or expired, or its admin
+     *     account is inactive or deleted.
      */
     public function validate(string $bearerToken): AdminContext
     {
@@ -46,6 +48,9 @@ class AdminTokenValidator
         }
 
         $adminId = (int)$token->getAdminUserId();
+        if (!$this->adminUserStatus->isActive($adminId)) {
+            throw new UnauthorizedException('The admin account of this access token is inactive or deleted.');
+        }
 
         return new AdminContext($adminId, $this->resolveAllowedResources($adminId));
     }

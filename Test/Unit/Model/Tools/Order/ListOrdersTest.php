@@ -13,9 +13,12 @@ use Magento\Sales\Api\Data\OrderSearchResultInterface;
 use Magento\Sales\Api\OrderRepositoryInterface;
 use PHPUnit\Framework\TestCase;
 use Yu\McpServer\Model\Tools\Order\ListOrders;
+use Yu\McpServer\Test\Unit\Model\StoreTimeMockTrait;
 
 class ListOrdersTest extends TestCase
 {
+    use StoreTimeMockTrait;
+
     /**
      * Cross-customer order data must require the Sales ACL resource.
      */
@@ -24,7 +27,8 @@ class ListOrdersTest extends TestCase
         $tool = new ListOrders(
             $this->createMock(OrderRepositoryInterface::class),
             $this->createMock(SearchCriteriaBuilder::class),
-            $this->createMock(SortOrderBuilder::class)
+            $this->createMock(SortOrderBuilder::class),
+            $this->storeTime()
         );
 
         $this->assertSame('Magento_Sales::sales', $tool->getRequiredAclResource());
@@ -42,7 +46,8 @@ class ListOrdersTest extends TestCase
         $tool = new ListOrders(
             $orderRepository,
             $this->createMock(SearchCriteriaBuilder::class),
-            $this->createMock(SortOrderBuilder::class)
+            $this->createMock(SortOrderBuilder::class),
+            $this->storeTime()
         );
 
         $invalid = [
@@ -104,7 +109,14 @@ class ListOrdersTest extends TestCase
         $sortOrderBuilder->expects($this->once())->method('setDescendingDirection')->willReturnSelf();
         $sortOrderBuilder->method('create')->willReturn($this->createMock(SortOrder::class));
 
-        $tool = new ListOrders($orderRepository, $searchCriteriaBuilder, $sortOrderBuilder);
+        // Store in America/Chicago (UTC-5 in July): dates go in as local days, the DB filter
+        // gets UTC, and returned timestamps come back in local time.
+        $tool = new ListOrders(
+            $orderRepository,
+            $searchCriteriaBuilder,
+            $sortOrderBuilder,
+            $this->storeTime('America/Chicago')
+        );
 
         $result = $tool->execute([
             'status' => 'processing',
@@ -115,8 +127,9 @@ class ListOrdersTest extends TestCase
         ]);
 
         $this->assertContains(['status', 'processing', 'eq'], $filters);
-        $this->assertContains(['created_at', '2026-07-01', 'gteq'], $filters);
-        $this->assertContains(['created_at', '2026-07-08 23:59:59', 'lteq'], $filters);
+        $this->assertContains(['created_at', '2026-07-01 05:00:00', 'gteq'], $filters);
+        $this->assertContains(['created_at', '2026-07-09 04:59:59', 'lteq'], $filters);
+        $this->assertSame('2026-07-08 04:15:00', $result['orders'][0]['created_at']);
         $this->assertSame(1, $result['count']);
         $this->assertSame(41, $result['total']);
         $this->assertSame(2, $result['page']);
@@ -149,7 +162,14 @@ class ListOrdersTest extends TestCase
         $sortOrderBuilder->method('setDescendingDirection')->willReturnSelf();
         $sortOrderBuilder->method('create')->willReturn($this->createMock(SortOrder::class));
 
-        $tool = new ListOrders($orderRepository, $searchCriteriaBuilder, $sortOrderBuilder);
+        // Store in America/Chicago (UTC-5 in July): dates go in as local days, the DB filter
+        // gets UTC, and returned timestamps come back in local time.
+        $tool = new ListOrders(
+            $orderRepository,
+            $searchCriteriaBuilder,
+            $sortOrderBuilder,
+            $this->storeTime('America/Chicago')
+        );
 
         $result = $tool->execute([]);
 

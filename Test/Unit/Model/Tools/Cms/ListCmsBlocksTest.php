@@ -9,15 +9,18 @@ use Magento\Cms\Model\ResourceModel\Block\CollectionFactory as BlockCollectionFa
 use Magento\Framework\DataObject;
 use PHPUnit\Framework\TestCase;
 use Yu\McpServer\Model\Tools\Cms\ListCmsBlocks;
+use Yu\McpServer\Test\Unit\Model\StoreTimeMockTrait;
 
 class ListCmsBlocksTest extends TestCase
 {
+    use StoreTimeMockTrait;
+
     /**
      * The listing includes inactive blocks — the tool must require the CMS block ACL.
      */
     public function testRequiresCmsBlockAclResource(): void
     {
-        $tool = new ListCmsBlocks($this->createMock(BlockCollectionFactory::class));
+        $tool = new ListCmsBlocks($this->createMock(BlockCollectionFactory::class), $this->storeTime());
 
         $this->assertSame('Magento_Cms::block', $tool->getRequiredAclResource());
         $this->assertSame('cms_block_list', $tool->getName());
@@ -31,7 +34,7 @@ class ListCmsBlocksTest extends TestCase
         $factory = $this->createMock(BlockCollectionFactory::class);
         $factory->expects($this->never())->method('create');
 
-        $tool = new ListCmsBlocks($factory);
+        $tool = new ListCmsBlocks($factory, $this->storeTime());
 
         foreach ([['is_active' => 1], ['limit' => -1]] as $arguments) {
             try {
@@ -66,7 +69,7 @@ class ListCmsBlocksTest extends TestCase
         $factory = $this->createMock(BlockCollectionFactory::class);
         $factory->method('create')->willReturn($collection);
 
-        $result = (new ListCmsBlocks($factory))->execute([]);
+        $result = (new ListCmsBlocks($factory, $this->storeTime()))->execute([]);
 
         $this->assertSame(1, $result['total']);
         $this->assertSame('footer-links', $result['blocks'][0]['identifier']);

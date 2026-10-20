@@ -9,15 +9,18 @@ use Magento\Cms\Model\ResourceModel\Page\CollectionFactory as PageCollectionFact
 use Magento\Framework\DataObject;
 use PHPUnit\Framework\TestCase;
 use Yu\McpServer\Model\Tools\Cms\ListCmsPages;
+use Yu\McpServer\Test\Unit\Model\StoreTimeMockTrait;
 
 class ListCmsPagesTest extends TestCase
 {
+    use StoreTimeMockTrait;
+
     /**
      * The listing includes inactive drafts — the tool must require the CMS page ACL.
      */
     public function testRequiresCmsPageAclResource(): void
     {
-        $tool = new ListCmsPages($this->createMock(PageCollectionFactory::class));
+        $tool = new ListCmsPages($this->createMock(PageCollectionFactory::class), $this->storeTime());
 
         $this->assertSame('Magento_Cms::page', $tool->getRequiredAclResource());
         $this->assertSame('cms_page_list', $tool->getName());
@@ -31,7 +34,7 @@ class ListCmsPagesTest extends TestCase
         $factory = $this->createMock(PageCollectionFactory::class);
         $factory->expects($this->never())->method('create');
 
-        $tool = new ListCmsPages($factory);
+        $tool = new ListCmsPages($factory, $this->storeTime());
 
         foreach ([['is_active' => 'yes'], ['limit' => 0]] as $arguments) {
             try {
@@ -75,7 +78,7 @@ class ListCmsPagesTest extends TestCase
         $factory = $this->createMock(PageCollectionFactory::class);
         $factory->method('create')->willReturn($collection);
 
-        $result = (new ListCmsPages($factory))->execute([]);
+        $result = (new ListCmsPages($factory, $this->storeTime()))->execute([]);
 
         $this->assertSame(2, $result['total']);
         $this->assertSame('about-us', $result['pages'][0]['identifier']);
@@ -98,7 +101,7 @@ class ListCmsPagesTest extends TestCase
         $factory = $this->createMock(PageCollectionFactory::class);
         $factory->method('create')->willReturn($collection);
 
-        $result = (new ListCmsPages($factory))->execute(['is_active' => false]);
+        $result = (new ListCmsPages($factory, $this->storeTime()))->execute(['is_active' => false]);
 
         $this->assertSame(0, $result['total']);
         $this->assertSame([], $result['pages']);

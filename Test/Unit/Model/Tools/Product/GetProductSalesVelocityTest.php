@@ -15,9 +15,12 @@ use Magento\Sales\Model\ResourceModel\Order\Item\Collection as OrderItemCollecti
 use Magento\Sales\Model\ResourceModel\Order\Item\CollectionFactory as OrderItemCollectionFactory;
 use PHPUnit\Framework\TestCase;
 use Yu\McpServer\Model\Tools\Product\GetProductSalesVelocity;
+use Yu\McpServer\Test\Unit\Model\StoreTimeMockTrait;
 
 class GetProductSalesVelocityTest extends TestCase
 {
+    use StoreTimeMockTrait;
+
     /**
      * Per-product sales volumes are order data — the tool must require the Sales ACL
      * resource.
@@ -172,6 +175,6 @@ class GetProductSalesVelocityTest extends TestCase
         $dateTime = $this->createMock(DateTime::class);
         $dateTime->method('gmtTimestamp')->willReturn(strtotime('2026-07-08 12:00:00'));
 
-        return new GetProductSalesVelocity($collectionFactory, $productRepository, $stockRegistry, $dateTime);
+        return new GetProductSalesVelocity($collectionFactory, $productRepository, $stockRegistry, $dateTime, $this->storeTime());
     }
 }

@@ -10,11 +10,14 @@ use Magento\CatalogInventory\Api\StockRegistryInterface;
 use Magento\Framework\Exception\NoSuchEntityException;
 use Yu\McpServer\Model\Auth\AdminContext;
 use Yu\McpServer\Model\ContextAwareToolInterface;
+use Yu\McpServer\Model\Tools\Catalog\StorefrontScope;
 
 /**
- * Two storefronts (see ContextAwareToolInterface): for anonymous callers a disabled
- * product's stock is as invisible as the product itself — reported "found": false, same
- * as an unknown SKU. An admin with the catalog ACL sees the stock of any product, with
+ * Two storefronts (see ContextAwareToolInterface): for anonymous callers the stock of a
+ * product outside the storefront (disabled or not on this website — see StorefrontScope)
+ * is as invisible as the product itself — reported "found": false, same as an unknown SKU.
+ * Visibility is not required: variants of configurable products have no page of their own,
+ * yet their stock shows on the parent's page. An admin with the catalog ACL sees the stock of any product, with
  * its status alongside.
  */
 class CheckStock implements ContextAwareToolInterface
@@ -23,7 +26,8 @@ class CheckStock implements ContextAwareToolInterface
 
     public function __construct(
         private readonly StockRegistryInterface $stockRegistry,
-        private readonly ProductRepositoryInterface $productRepository
+        private readonly ProductRepositoryInterface $productRepository,
+        private readonly StorefrontScope $storefrontScope
     ) {
     }
 
@@ -42,9 +46,10 @@ class CheckStock implements ContextAwareToolInterface
     {
         return 'Checks stock availability for one or more SKUs: quantity and in-stock flag '
             . 'per SKU. Unknown SKUs are reported per item ("found": false) without failing '
-            . 'the whole call. For anonymous callers disabled products are reported as not '
-            . 'found (the customer view); an authenticated admin with catalog permission '
-            . 'sees them with their status.';
+            . 'the whole call. For anonymous callers products outside this storefront '
+            . '(disabled or not on this website) are reported as not found (the customer '
+            . 'view); an authenticated admin with catalog permission sees them with their '
+            . 'status.';
     }
 
     /**
@@ -98,9 +103,9 @@ class CheckStock implements ContextAwareToolInterface
                 $product = $this->productRepository->get($sku);
                 $enabled = (int)$product->getStatus() === Status::STATUS_ENABLED;
 
-                // A customer can't see a disabled product on the storefront, so its stock
-                // is answered exactly like an unknown SKU for anonymous callers.
-                if (!$adminView && !$enabled) {
+                // A customer can't see such a product on the storefront, so its stock is
+                // answered exactly like an unknown SKU for anonymous callers.
+                if (!$adminView && !$this->storefrontScope->isProductVisible($product, null)) {
                     $stock[] = ['sku' => $sku, 'found' => false];
                     continue;
                 }

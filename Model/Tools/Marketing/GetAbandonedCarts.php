@@ -7,6 +7,7 @@ namespace Yu\McpServer\Model\Tools\Marketing;
 use Magento\Framework\Stdlib\DateTime\DateTime;
 use Magento\Quote\Model\ResourceModel\Quote\CollectionFactory as QuoteCollectionFactory;
 use Magento\Quote\Model\ResourceModel\Quote\Item\CollectionFactory as QuoteItemCollectionFactory;
+use Yu\McpServer\Model\StoreTime;
 use Yu\McpServer\Model\ToolInterface;
 
 /**
@@ -26,7 +27,8 @@ class GetAbandonedCarts implements ToolInterface
     public function __construct(
         private readonly QuoteCollectionFactory $quoteCollectionFactory,
         private readonly QuoteItemCollectionFactory $quoteItemCollectionFactory,
-        private readonly DateTime $dateTime
+        private readonly DateTime $dateTime,
+        private readonly StoreTime $storeTime
     ) {
     }
 
@@ -143,8 +145,8 @@ class GetAbandonedCarts implements ToolInterface
                 ) ?: null,
                 'customer_email' => $quote->getData('customer_email'),
                 'is_guest' => (bool)$quote->getData('customer_is_guest'),
-                'created_at' => $quote->getData('created_at'),
-                'last_activity_at' => $quote->getData('updated_at'),
+                'created_at' => $this->storeTime->toLocal($quote->getData('created_at')),
+                'last_activity_at' => $this->storeTime->toLocal($quote->getData('updated_at')),
                 'grand_total' => (float)$quote->getData('grand_total'),
                 'currency' => $quote->getData('quote_currency_code'),
                 'items' => [],

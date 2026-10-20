@@ -6,6 +6,7 @@ namespace Yu\McpServer\Model\Tools\Sales;
 
 use Magento\Sales\Model\Order;
 use Magento\Sales\Model\ResourceModel\Order\CollectionFactory as OrderCollectionFactory;
+use Yu\McpServer\Model\StoreTime;
 use Yu\McpServer\Model\ToolInterface;
 
 /**
@@ -18,7 +19,8 @@ class GetShippingMethodStats implements ToolInterface
     private const ORDER_SCAN_LIMIT = 5000;
 
     public function __construct(
-        private readonly OrderCollectionFactory $orderCollectionFactory
+        private readonly OrderCollectionFactory $orderCollectionFactory,
+        private readonly StoreTime $storeTime
     ) {
     }
 
@@ -38,7 +40,8 @@ class GetShippingMethodStats implements ToolInterface
         return 'Orders, revenue and shipping charges per SHIPPING method for a date range '
             . '(per currency): which delivery options customers choose and what they pay for '
             . 'them. Orders without shipping (virtual/downloadable) are grouped under '
-            . '"(no shipping)". Canceled orders are excluded. Dates are compared in UTC. '
+            . '"(no shipping)". Canceled orders are excluded. Dates are in store local time '
+            . '(store_info reports the timezone). '
             . 'Typical use: "which delivery methods do customers pick?".';
     }
 
@@ -52,12 +55,12 @@ class GetShippingMethodStats implements ToolInterface
             'properties' => [
                 'created_from' => [
                     'type' => 'string',
-                    'description' => 'Start of the period (inclusive), UTC, "YYYY-MM-DD" or '
+                    'description' => 'Start of the period (inclusive), store local time, "YYYY-MM-DD" or '
                         . '"YYYY-MM-DD HH:MM:SS".',
                 ],
                 'created_to' => [
                     'type' => 'string',
-                    'description' => 'End of the period (inclusive), UTC, "YYYY-MM-DD" '
+                    'description' => 'End of the period (inclusive), store local time, "YYYY-MM-DD" '
                         . '(whole day included) or "YYYY-MM-DD HH:MM:SS". Omit for "up to now".',
                 ],
             ],
@@ -83,9 +86,9 @@ class GetShippingMethodStats implements ToolInterface
         $createdTo = DateRange::optionalDate($arguments, 'created_to');
 
         $collection = $this->orderCollectionFactory->create();
-        $collection->addFieldToFilter('created_at', ['gteq' => $createdFrom]);
+        $collection->addFieldToFilter('created_at', ['gteq' => $this->storeTime->toUtc($createdFrom)]);
         if ($createdTo !== null) {
-            $collection->addFieldToFilter('created_at', ['lteq' => $createdTo]);
+            $collection->addFieldToFilter('created_at', ['lteq' => $this->storeTime->toUtc($createdTo)]);
         }
         $collection->setPageSize(self::ORDER_SCAN_LIMIT);
         $collection->setCurPage(1);

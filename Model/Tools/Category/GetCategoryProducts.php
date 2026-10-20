@@ -10,11 +10,14 @@ use Magento\Catalog\Model\ResourceModel\Product\CollectionFactory;
 use Magento\Framework\Exception\NoSuchEntityException;
 use Yu\McpServer\Model\Auth\AdminContext;
 use Yu\McpServer\Model\ContextAwareToolInterface;
+use Yu\McpServer\Model\Tools\Catalog\StorefrontScope;
 
 /**
- * Two storefronts (see ContextAwareToolInterface): anonymous callers get the category's
- * enabled products only — what a customer sees; an admin with the catalog ACL also gets
- * disabled ones, each row carrying its status.
+ * Two storefronts (see ContextAwareToolInterface): anonymous callers get what a customer
+ * sees on the category page — the category must be active and in this store's tree, and
+ * only products listed in the catalog are returned (see StorefrontScope); anything else is
+ * reported like an unknown category id. An admin with the catalog ACL gets any category
+ * and all of its products, each row carrying its status.
  */
 class GetCategoryProducts implements ContextAwareToolInterface
 {
@@ -23,7 +26,8 @@ class GetCategoryProducts implements ContextAwareToolInterface
 
     public function __construct(
         private readonly CategoryRepositoryInterface $categoryRepository,
-        private readonly CollectionFactory $productCollectionFactory
+        private readonly CollectionFactory $productCollectionFactory,
+        private readonly StorefrontScope $storefrontScope
     ) {
     }
 
@@ -42,9 +46,10 @@ class GetCategoryProducts implements ContextAwareToolInterface
     {
         return 'Lists products assigned to a category by its ID (use category_tree to '
             . 'find category ids). Returns basic product data; use product_get '
-            . 'for the full card of a specific product. Anonymous callers see enabled '
-            . 'products only (the customer view); an authenticated admin with catalog '
-            . 'permission also sees disabled ones.';
+            . 'for the full card of a specific product. Anonymous callers see what the '
+            . 'category page shows a customer of this store (active categories of this '
+            . 'store, enabled products listed in the catalog); an authenticated admin with '
+            . 'catalog permission sees any category and all of its products.';
     }
 
     /**
@@ -102,11 +107,16 @@ class GetCategoryProducts implements ContextAwareToolInterface
             throw new \RuntimeException(sprintf('Category with ID %d does not exist.', $categoryId));
         }
 
+        // Same answer as an unknown id, so hidden categories can't be probed anonymously.
+        if (!$adminView && !$this->storefrontScope->isCategoryVisible($category)) {
+            throw new \RuntimeException(sprintf('Category with ID %d does not exist.', $categoryId));
+        }
+
         $collection = $this->productCollectionFactory->create();
         $collection->addAttributeToSelect(['name', 'sku', 'price', 'status']);
         $collection->addCategoriesFilter(['in' => [$categoryId]]);
         if (!$adminView) {
-            $collection->addAttributeToFilter('status', Status::STATUS_ENABLED);
+            $this->storefrontScope->filterProductCollection($collection, StorefrontScope::VISIBLE_IN_CATALOG);
         }
         $collection->setPageSize($limit);
 

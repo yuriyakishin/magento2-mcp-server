@@ -9,15 +9,18 @@ use Magento\Sales\Model\ResourceModel\Order\Collection as OrderCollection;
 use Magento\Sales\Model\ResourceModel\Order\CollectionFactory as OrderCollectionFactory;
 use PHPUnit\Framework\TestCase;
 use Yu\McpServer\Model\Tools\Sales\CompareSalesPeriods;
+use Yu\McpServer\Test\Unit\Model\StoreTimeMockTrait;
 
 class CompareSalesPeriodsTest extends TestCase
 {
+    use StoreTimeMockTrait;
+
     /**
      * Aggregated revenue is order data — the tool must require the Sales ACL resource.
      */
     public function testRequiresSalesAclResource(): void
     {
-        $tool = new CompareSalesPeriods($this->createMock(OrderCollectionFactory::class));
+        $tool = new CompareSalesPeriods($this->createMock(OrderCollectionFactory::class), $this->storeTime());
 
         $this->assertSame('Magento_Sales::sales', $tool->getRequiredAclResource());
         $this->assertSame('sales_compare_periods', $tool->getName());
@@ -32,7 +35,7 @@ class CompareSalesPeriodsTest extends TestCase
         $factory = $this->createMock(OrderCollectionFactory::class);
         $factory->expects($this->never())->method('create');
 
-        $tool = new CompareSalesPeriods($factory);
+        $tool = new CompareSalesPeriods($factory, $this->storeTime());
 
         $invalid = [
             [],
@@ -70,7 +73,7 @@ class CompareSalesPeriodsTest extends TestCase
             $this->collectionMock($periodB)
         );
 
-        $result = (new CompareSalesPeriods($factory))->execute([
+        $result = (new CompareSalesPeriods($factory, $this->storeTime()))->execute([
             'period_a_from' => '2026-05-01',
             'period_a_to' => '2026-05-31',
             'period_b_from' => '2026-06-01',
@@ -101,7 +104,7 @@ class CompareSalesPeriodsTest extends TestCase
             ])
         );
 
-        $result = (new CompareSalesPeriods($factory))->execute([
+        $result = (new CompareSalesPeriods($factory, $this->storeTime()))->execute([
             'period_a_from' => '2026-05-01',
             'period_a_to' => '2026-05-31',
             'period_b_from' => '2026-06-01',

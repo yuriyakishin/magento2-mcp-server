@@ -13,9 +13,12 @@ use Magento\Review\Model\ResourceModel\Review\CollectionFactory;
 use Magento\Review\Model\Review;
 use PHPUnit\Framework\TestCase;
 use Yu\McpServer\Model\Tools\Review\ListReviews;
+use Yu\McpServer\Test\Unit\Model\StoreTimeMockTrait;
 
 class ListReviewsTest extends TestCase
 {
+    use StoreTimeMockTrait;
+
     /**
      * review_list exposes unmoderated review texts — it must require the admin
      * "All Reviews" ACL resource.
@@ -77,8 +80,8 @@ class ListReviewsTest extends TestCase
             function (string $field, array $condition) use ($collection) {
                 $this->assertSame('main_table.created_at', $field);
                 $this->assertContains($condition, [
-                    ['gteq' => '2026-07-01'],
-                    ['lteq' => '2026-07-07 23:59:59'],
+                    ['gteq' => '2026-07-01 05:00:00'],
+                    ['lteq' => '2026-07-08 04:59:59'],
                 ]);
                 return $collection;
             }
@@ -95,7 +98,7 @@ class ListReviewsTest extends TestCase
 
         $tool = new ListReviews($collectionFactory, $this->productCollectionFactoryMock([
             42 => ['sku' => 'SOFA-1', 'name' => 'Sofa'],
-        ]));
+        ]), $this->storeTime('America/Chicago'));
 
         $result = $tool->execute([
             'status' => 'pending',
@@ -106,6 +109,7 @@ class ListReviewsTest extends TestCase
         $this->assertSame(1, $result['count']);
         $this->assertSame(1, $result['total']);
         $this->assertSame(7, $result['reviews'][0]['review_id']);
+        $this->assertSame('2026-07-05 05:00:00', $result['reviews'][0]['created_at']);
         $this->assertSame('pending', $result['reviews'][0]['status']);
         $this->assertSame(4.5, $result['reviews'][0]['rating']);
         $this->assertSame('Very comfy sofa', $result['reviews'][0]['text']);
@@ -160,7 +164,7 @@ class ListReviewsTest extends TestCase
 
         $tool = new ListReviews($collectionFactory, $this->productCollectionFactoryMock([
             42 => ['sku' => 'SOFA-1', 'name' => 'Sofa'],
-        ]));
+        ]), $this->storeTime());
 
         $result = $tool->execute(['rating_max' => 2]);
 
@@ -189,7 +193,7 @@ class ListReviewsTest extends TestCase
         $productCollectionFactory = $this->createMock(ProductCollectionFactory::class);
         $productCollectionFactory->expects($this->never())->method('create');
 
-        $tool = new ListReviews($collectionFactory, $productCollectionFactory);
+        $tool = new ListReviews($collectionFactory, $productCollectionFactory, $this->storeTime());
 
         $result = $tool->execute([]);
 
@@ -205,7 +209,8 @@ class ListReviewsTest extends TestCase
     {
         return new ListReviews(
             $this->createMock(CollectionFactory::class),
-            $this->createMock(ProductCollectionFactory::class)
+            $this->createMock(ProductCollectionFactory::class),
+            $this->storeTime()
         );
     }
 

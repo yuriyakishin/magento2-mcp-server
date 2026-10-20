@@ -67,7 +67,7 @@ class StoreCheckup implements PromptInterface
 
         $text = <<<PROMPT
 Run a full health check of the store. Period for the sales-dependent checks: {$period}
-(resolve it into concrete UTC dates first).
+(resolve it into concrete dates in the store's local time first).
 
 Gather the data with the store's tools, in this order:
 

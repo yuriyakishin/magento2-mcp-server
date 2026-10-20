@@ -9,15 +9,18 @@ use Magento\Sales\Model\ResourceModel\Order\Item\Collection as OrderItemCollecti
 use Magento\Sales\Model\ResourceModel\Order\Item\CollectionFactory as OrderItemCollectionFactory;
 use PHPUnit\Framework\TestCase;
 use Yu\McpServer\Model\Tools\Sales\GetBestsellers;
+use Yu\McpServer\Test\Unit\Model\StoreTimeMockTrait;
 
 class GetBestsellersTest extends TestCase
 {
+    use StoreTimeMockTrait;
+
     /**
      * Per-product sales are order data — the tool must require the Sales ACL resource.
      */
     public function testRequiresSalesAclResource(): void
     {
-        $tool = new GetBestsellers($this->createMock(OrderItemCollectionFactory::class));
+        $tool = new GetBestsellers($this->createMock(OrderItemCollectionFactory::class), $this->storeTime());
 
         $this->assertSame('Magento_Sales::sales', $tool->getRequiredAclResource());
         $this->assertSame('sales_bestsellers', $tool->getName());
@@ -32,7 +35,7 @@ class GetBestsellersTest extends TestCase
         $factory = $this->createMock(OrderItemCollectionFactory::class);
         $factory->expects($this->never())->method('create');
 
-        $tool = new GetBestsellers($factory);
+        $tool = new GetBestsellers($factory, $this->storeTime());
 
         $invalid = [
             [],
@@ -61,7 +64,7 @@ class GetBestsellersTest extends TestCase
             new DataObject(['sku' => 'WP01', 'name' => 'Pant', 'qty_ordered' => '1', 'row_total' => '5000.00']),
         ];
 
-        $result = (new GetBestsellers($this->factoryMock($items)))
+        $result = (new GetBestsellers($this->factoryMock($items), $this->storeTime()))
             ->execute(['created_from' => '2026-06-01', 'created_to' => '2026-06-30']);
 
         $this->assertSame('WS02', $result['products'][0]['sku']);
@@ -82,11 +85,43 @@ class GetBestsellersTest extends TestCase
             new DataObject(['sku' => 'WP01', 'name' => 'Pant', 'qty_ordered' => '1', 'row_total' => '5000.00']),
         ];
 
-        $result = (new GetBestsellers($this->factoryMock($items)))
+        $result = (new GetBestsellers($this->factoryMock($items), $this->storeTime()))
             ->execute(['created_from' => '2026-06-01', 'sort_by' => 'revenue']);
 
         $this->assertSame('WP01', $result['products'][0]['sku']);
         $this->assertSame('revenue', $result['sort_by']);
+    }
+
+    /**
+     * The period is the merchant's calendar: store-local days are converted to UTC for the
+     * created_at filter, while the reported period stays in local time.
+     */
+    public function testPeriodIsReadInStoreTimezone(): void
+    {
+        $filters = [];
+        $collection = $this->createMock(OrderItemCollection::class);
+        $collection->method('addFieldToFilter')->willReturnCallback(
+            function (string $field, array $condition) use (&$filters, $collection) {
+                if ($field === 'created_at') {
+                    $filters[] = $condition;
+                }
+                return $collection;
+            }
+        );
+        $collection->method('getIterator')->willReturn(new \ArrayIterator([]));
+        $factory = $this->createMock(OrderItemCollectionFactory::class);
+        $factory->method('create')->willReturn($collection);
+
+        $result = (new GetBestsellers($factory, $this->storeTime('America/Chicago')))->execute([
+            'created_from' => '2026-07-07',
+            'created_to' => '2026-07-07',
+        ]);
+
+        $this->assertSame(
+            [['gteq' => '2026-07-07 05:00:00'], ['lteq' => '2026-07-08 04:59:59']],
+            $filters
+        );
+        $this->assertSame(['from' => '2026-07-07', 'to' => '2026-07-07 23:59:59'], $result['period']);
     }
 
     /**

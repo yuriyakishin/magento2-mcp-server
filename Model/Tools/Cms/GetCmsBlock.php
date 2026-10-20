@@ -7,13 +7,15 @@ namespace Yu\McpServer\Model\Tools\Cms;
 use Magento\Cms\Api\GetBlockByIdentifierInterface;
 use Magento\Framework\Exception\NoSuchEntityException;
 use Magento\Store\Model\StoreManagerInterface;
+use Yu\McpServer\Model\StoreTime;
 use Yu\McpServer\Model\ToolInterface;
 
 class GetCmsBlock implements ToolInterface
 {
     public function __construct(
         private readonly GetBlockByIdentifierInterface $getBlockByIdentifier,
-        private readonly StoreManagerInterface $storeManager
+        private readonly StoreManagerInterface $storeManager,
+        private readonly StoreTime $storeTime
     ) {
     }
 
@@ -92,7 +94,7 @@ class GetCmsBlock implements ToolInterface
                 'identifier' => $block->getIdentifier(),
                 'title' => $block->getTitle(),
                 'content' => $block->getContent(),
-                'updated_at' => $block->getUpdateTime(),
+                'updated_at' => $this->storeTime->toLocal($block->getUpdateTime()),
             ],
         ];
     }

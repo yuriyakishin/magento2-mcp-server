@@ -62,6 +62,14 @@ Stores → Configuration → Advanced → MCP Server:
 | Enable Public (Anonymous) Tools | Yes | Anonymous `tools/call` on ACL-free tools. Off = every tool call requires an authenticated admin; `tools/list` stays open for OAuth discovery |
 | Enable Write Tools | No | Master switch for all `WriteToolInterface` tools. Off = hidden from `tools/list`, rejected at `tools/call` |
 | Log Full Request/Response Bodies | No | Debug-level dump of raw JSON-RPC payloads to `var/log/mcp.log`. May contain personal data — enable only while debugging |
+| Security → Client IP Header | empty | Header with the real visitor IP behind a proxy/CDN/tunnel (`CF-Connecting-IP` for Cloudflare, `X-Forwarded-For` for most proxies). Used for rate limiting. Honored only for requests coming from a Trusted Proxy |
+| Security → Trusted Proxies | empty | IPs or CIDR ranges of your own proxies (e.g. `127.0.0.1` for a local tunnel). Requests from anywhere else can't set the client IP via the header |
+| Security → Allowed OAuth Redirect Hosts | empty (any) | Hosts MCP clients may receive authorization codes on (e.g. `claude.ai`). Enforced at client registration and on every sign-in |
+
+**Behind a proxy, set both Client IP Header and Trusted Proxies.** Without them every
+visitor arrives with the proxy's address and shares one rate-limit bucket. The header is
+deliberately ignored from untrusted addresses: if it were honored from anyone, a client
+could send a fresh fake IP with every request and never hit a limit.
 
 ## Connecting a client
 
@@ -77,6 +85,20 @@ discovery/registration mechanics behind this.
 40 tools, organized by domain below (see [Prompts](#prompts) for multi-step workflows).
 **Access**: Public = anonymous · Read — `<ACL resource>` = admin holding that resource ·
 Write — `<ACL resource>` = same, plus the "Enable Write Tools" switch (off by default).
+
+**Dates are in the store's local time.** Every date a tool accepts ("2026-03-15",
+"2026-03-15 18:00:00") is read in the store's configured timezone (Stores → Configuration →
+General → Locale Options), and every timestamp a tool returns is converted to it. So
+"yesterday's sales" means the merchant's yesterday, midnight to midnight, not a UTC day that
+cuts the evening off. `store_info` reports the timezone.
+
+**Public tools answer like the storefront.** An anonymous caller gets exactly what a guest
+of the store sees: only enabled products assigned to the current website and visible where
+the question is asked (search, category page, own product page), only active categories of
+the store's tree, and only promotions offered to guests, by their storefront label.
+Anything else is answered as "does not exist", so hidden catalog data can't be probed. An
+admin signed in with the matching permission gets the back-office view of the same tools
+(disabled products and categories, all promotions with their internal names).
 
 ### Product
 
@@ -177,7 +199,7 @@ jobs and disabled/invalidated caches, but fixing them stays admin work.
 
 | Tool | Access | Purpose | Example |
 |---|---|---|---|
-| `promotion_list` | Public | Active cart rules (coupon codes never exposed) | *"What promotions are running right now?"* |
+| `promotion_list` | Public | Active cart rules offered to guests, by storefront label (admins with `Magento_SalesRule::quote` see all rules with internal names; coupon codes never exposed) | *"What promotions are running right now?"* |
 | `cart_list_abandoned` | Read — `Magento_Reports::abandoned` | Abandoned carts incl. customer email, filterable by age/value | *"List abandoned carts over $100 from this week."* |
 
 ### Store
@@ -207,21 +229,37 @@ audit-logged (`var/log/mcp.log`, info level, no customer personal data).
 
 ## Security
 
-- **OAuth 2.1 Authorization Code + PKCE** (S256 only), access + refresh tokens, refresh
-  rotation on every use, single-use 60s auth codes, per-IP throttling of failed logins
-  (5 / 15 min). Public clients only — no client secrets.
+- **OAuth 2.1 Authorization Code + PKCE** (S256 only), 1-hour access tokens, 30-day
+  refresh tokens rotated on every use, single-use 60s auth codes. Public clients only —
+  no client secrets.
+- **Sign-in protection:** Magento's own admin account lockout applies to the MCP sign-in
+  form (failures count toward it, a locked account can't sign in), plus per-IP throttling
+  of failed logins (5 / 15 min). 2FA (authenticator app) is enforced when
+  Magento_TwoFactorAuth requires it, and an expired password that Magento forces to be
+  changed blocks sign-in until it's changed in the Admin panel.
+- **The sign-in form shows who is asking:** the client's (self-reported) name and the
+  address the authorization will be sent to, so an admin can spot a phishing link. Client
+  registration is rate-limited per IP; redirect hosts can be restricted to an allowlist.
+- **Revocation follows the admin account:** deactivating or deleting an admin cuts off
+  their MCP access on the next request; changing an admin's password or deactivating them
+  revokes all their MCP tokens.
 - **Identity = Magento admin, permissions = Magento ACL.** No parallel user store. A full
   Administrator role (`Magento_Backend::all`) is treated as a wildcard.
-- **Anonymous surface:** rate-limited 60 requests/IP/min (proxy-aware client IP — works
-  behind Cloudflare Tunnel / reverse proxies via `X-Forwarded-For`), optionally disableable
-  entirely via the public-tools switch.
+- **Anonymous surface:** rate-limited 60 requests/IP/min (client IP from the connection,
+  or from a configured header sent by a trusted proxy — see Configuration), optionally
+  disableable entirely via the public-tools switch.
 - **Dedicated OAuth storage:** `mcp_oauth_client` / `mcp_oauth_auth_code` /
   `mcp_oauth_token` tables (separate from Magento's OAuth 1.0a Integration tokens, which
-  can't serve this flow).
+  can't serve this flow). Tokens and authorization codes are stored only as SHA-256
+  digests, like a password hash: someone reading the database or a backup can't use them
+  to call the store. Upgrading converts existing rows in place, so connected clients stay
+  signed in.
 - Presented-but-invalid tokens are a hard 401 — never silently downgraded to anonymous.
 - **Error semantics:** anonymous call to a restricted tool → HTTP 401 (+ `WWW-Authenticate`);
   authenticated but missing the ACL resource → JSON-RPC error `-32002` (Forbidden) in a 200
-  response; over the anonymous rate limit → HTTP 429 + `Retry-After`.
+  response; over the anonymous rate limit → HTTP 429 + `Retry-After` (seconds until the
+  current minute window ends). A tool that fails internally (database error, bug) returns
+  only a generic message with a reference id; the details stay in `var/log/mcp.log`.
 
 ## Logging
 
@@ -231,7 +269,9 @@ audit records). Payload bodies are logged only at debug level behind the config 
 ## Protocol
 
 Single endpoint `POST /mcp`, JSON-RPC 2.0, MCP Streamable HTTP transport. Batch requests
-supported. `GET /mcp` opens an empty SSE stream (some clients probe with GET before
+supported (an element that isn't a request object gets its own `Invalid Request` error).
+`initialize` reports the installed Composer package version as `serverInfo.version`
+(`dev` when the module is copied into `app/code`). `GET /mcp` opens an empty SSE stream (some clients probe with GET before
 registering).
 
 **OAuth discovery:** the client reads `/.well-known/oauth-protected-resource` and

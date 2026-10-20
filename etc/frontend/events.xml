@@ -1,0 +1,11 @@
+<?xml version="1.0"?>
+<config xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+        xsi:noNamespaceSchemaLocation="urn:magento:framework:Event/etc/events.xsd">
+    <!-- Magento's admin account lockout (failure counting, lock check, unlock on success)
+         is registered for the adminhtml area only. The MCP sign-in form runs in the
+         frontend area, so without this the lockout neither counts its failures nor stops
+         a locked account from signing in. Same vendor observer, nothing re-implemented. -->
+    <event name="admin_user_authenticate_after">
+        <observer name="yu_mcp_admin_lockout" instance="Magento\User\Observer\Backend\AuthObserver"/>
+    </event>
+</config>

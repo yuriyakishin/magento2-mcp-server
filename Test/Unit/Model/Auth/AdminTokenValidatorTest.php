@@ -15,6 +15,7 @@ use PHPUnit\Framework\MockObject\MockObject;
 use PHPUnit\Framework\TestCase;
 use Yu\McpServer\Exception\UnauthorizedException;
 use Yu\McpServer\Model\Auth\AdminTokenValidator;
+use Yu\McpServer\Model\Auth\AdminUserStatus;
 use Yu\McpServer\Model\Oauth\Token;
 use Yu\McpServer\Model\Oauth\TokenRepository;
 
@@ -34,7 +35,8 @@ class AdminTokenValidatorTest extends TestCase
             $tokenRepository,
             $this->createMock(AclRetriever::class),
             $this->createMock(RoleCollectionFactory::class),
-            $this->createMock(DateTime::class)
+            $this->createMock(DateTime::class),
+            $this->createMock(AdminUserStatus::class)
         );
 
         $this->expectException(UnauthorizedException::class);
@@ -56,7 +58,8 @@ class AdminTokenValidatorTest extends TestCase
             $tokenRepository,
             $this->createMock(AclRetriever::class),
             $this->createMock(RoleCollectionFactory::class),
-            $this->createMock(DateTime::class)
+            $this->createMock(DateTime::class),
+            $this->createMock(AdminUserStatus::class)
         );
 
         $this->expectException(UnauthorizedException::class);
@@ -81,12 +84,50 @@ class AdminTokenValidatorTest extends TestCase
             $tokenRepository,
             $this->createMock(AclRetriever::class),
             $this->createMock(RoleCollectionFactory::class),
-            $dateTime
+            $dateTime,
+            $this->activeAdminStatus()
         );
 
         $this->expectException(UnauthorizedException::class);
 
         $validator->validate('expired-token');
+    }
+
+    /**
+     * A valid, unexpired token whose admin was deactivated or deleted must fail as
+     * Unauthorized — disabling the account in Magento has to cut MCP access immediately.
+     */
+    public function testThrowsWhenAdminIsInactive(): void
+    {
+        $token = $this->mockToken([
+            'getRevokedAt' => null,
+            'getExpiresAt' => '2030-01-01 00:00:00',
+            'getAdminUserId' => 3,
+        ]);
+
+        $tokenRepository = $this->createMock(TokenRepository::class);
+        $tokenRepository->method('getByAccessToken')->willReturn($token);
+
+        $dateTime = $this->createMock(DateTime::class);
+        $dateTime->method('gmtTimestamp')->willReturn(strtotime('2026-01-01 00:00:00'));
+
+        $adminUserStatus = $this->createMock(AdminUserStatus::class);
+        $adminUserStatus->method('isActive')->with(3)->willReturn(false);
+
+        $aclRetriever = $this->createMock(AclRetriever::class);
+        $aclRetriever->expects($this->never())->method('getAllowedResourcesByRole');
+
+        $validator = new AdminTokenValidator(
+            $tokenRepository,
+            $aclRetriever,
+            $this->createMock(RoleCollectionFactory::class),
+            $dateTime,
+            $adminUserStatus
+        );
+
+        $this->expectException(UnauthorizedException::class);
+
+        $validator->validate('valid-token');
     }
 
     /**
@@ -119,7 +160,8 @@ class AdminTokenValidatorTest extends TestCase
             $tokenRepository,
             $aclRetriever,
             $this->mockRoleCollectionFactory(3, userRoleId: 6, parentRoleId: 1),
-            $dateTime
+            $dateTime,
+            $this->activeAdminStatus()
         );
 
         $context = $validator->validate('valid-token');
@@ -153,13 +195,25 @@ class AdminTokenValidatorTest extends TestCase
             $tokenRepository,
             $aclRetriever,
             $this->mockRoleCollectionFactory(9, userRoleId: null, parentRoleId: null),
-            $dateTime
+            $dateTime,
+            $this->activeAdminStatus()
         );
 
         $context = $validator->validate('valid-token');
 
         $this->assertSame([], $context->getAllowedAclResources());
         $this->assertFalse($context->hasAclResource('Magento_Sales::sales'));
+    }
+
+    /**
+     * AdminUserStatus mock reporting every admin as active.
+     */
+    private function activeAdminStatus(): AdminUserStatus&MockObject
+    {
+        $adminUserStatus = $this->createMock(AdminUserStatus::class);
+        $adminUserStatus->method('isActive')->willReturn(true);
+
+        return $adminUserStatus;
     }
 
     /**

@@ -81,7 +81,7 @@ class SalesTrends implements PromptInterface
 Compare the store's sales between two periods and visualise the change.
 Current period: {$period}. Baseline: {$baseline}.
 
-1. Resolve both periods into concrete UTC date ranges first. The two ranges must not
+1. Resolve both periods into concrete store-local date ranges first. The two ranges must not
    overlap; when the baseline is relative ("immediately before", "last year"), derive it
    from the resolved current period.
 2. Core comparison — sales_compare_periods with period_a_from/period_a_to = the baseline

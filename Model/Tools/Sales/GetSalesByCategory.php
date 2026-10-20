@@ -7,6 +7,7 @@ namespace Yu\McpServer\Model\Tools\Sales;
 use Magento\Catalog\Model\ResourceModel\Category\CollectionFactory as CategoryCollectionFactory;
 use Magento\Catalog\Model\ResourceModel\Product\CollectionFactory as ProductCollectionFactory;
 use Magento\Sales\Model\ResourceModel\Order\Item\CollectionFactory as OrderItemCollectionFactory;
+use Yu\McpServer\Model\StoreTime;
 use Yu\McpServer\Model\ToolInterface;
 
 /**
@@ -24,7 +25,8 @@ class GetSalesByCategory implements ToolInterface
     public function __construct(
         private readonly OrderItemCollectionFactory $orderItemCollectionFactory,
         private readonly ProductCollectionFactory $productCollectionFactory,
-        private readonly CategoryCollectionFactory $categoryCollectionFactory
+        private readonly CategoryCollectionFactory $categoryCollectionFactory,
+        private readonly StoreTime $storeTime
     ) {
     }
 
@@ -59,12 +61,12 @@ class GetSalesByCategory implements ToolInterface
             'properties' => [
                 'created_from' => [
                     'type' => 'string',
-                    'description' => 'Start of the period (inclusive), UTC, "YYYY-MM-DD" or '
+                    'description' => 'Start of the period (inclusive), store local time, "YYYY-MM-DD" or '
                         . '"YYYY-MM-DD HH:MM:SS".',
                 ],
                 'created_to' => [
                     'type' => 'string',
-                    'description' => 'End of the period (inclusive), UTC, "YYYY-MM-DD" '
+                    'description' => 'End of the period (inclusive), store local time, "YYYY-MM-DD" '
                         . '(whole day included) or "YYYY-MM-DD HH:MM:SS". Omit for "up to now".',
                 ],
                 'limit' => [
@@ -94,7 +96,10 @@ class GetSalesByCategory implements ToolInterface
         $createdTo = DateRange::optionalDate($arguments, 'created_to');
         $limit = $this->limitArgument($arguments);
 
-        [$perProduct, $truncated] = $this->aggregateItems($createdFrom, $createdTo);
+        [$perProduct, $truncated] = $this->aggregateItems(
+            $this->storeTime->toUtc($createdFrom),
+            $createdTo !== null ? $this->storeTime->toUtc($createdTo) : null
+        );
         $categoryRows = $this->groupByCategory($perProduct);
 
         usort($categoryRows, static fn (array $a, array $b) => $b['revenue'] <=> $a['revenue']);

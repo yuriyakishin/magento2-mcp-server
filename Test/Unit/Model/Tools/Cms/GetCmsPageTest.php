@@ -11,9 +11,12 @@ use Magento\Store\Model\Store;
 use Magento\Store\Model\StoreManagerInterface;
 use PHPUnit\Framework\TestCase;
 use Yu\McpServer\Model\Tools\Cms\GetCmsPage;
+use Yu\McpServer\Test\Unit\Model\StoreTimeMockTrait;
 
 class GetCmsPageTest extends TestCase
 {
+    use StoreTimeMockTrait;
+
     /**
      * cms_page_get is a public tool and must not require an ACL resource.
      */
@@ -21,7 +24,8 @@ class GetCmsPageTest extends TestCase
     {
         $tool = new GetCmsPage(
             $this->createMock(GetPageByIdentifierInterface::class),
-            $this->createMock(StoreManagerInterface::class)
+            $this->createMock(StoreManagerInterface::class),
+            $this->storeTime()
         );
 
         $this->assertNull($tool->getRequiredAclResource());
@@ -35,7 +39,8 @@ class GetCmsPageTest extends TestCase
     {
         $tool = new GetCmsPage(
             $this->createMock(GetPageByIdentifierInterface::class),
-            $this->createMock(StoreManagerInterface::class)
+            $this->createMock(StoreManagerInterface::class),
+            $this->storeTime()
         );
 
         foreach ([[], ['identifier' => ''], ['identifier' => 7]] as $arguments) {
@@ -58,7 +63,7 @@ class GetCmsPageTest extends TestCase
             NoSuchEntityException::singleField('identifier', 'missing')
         );
 
-        $tool = new GetCmsPage($getPageByIdentifier, $this->mockStoreManager());
+        $tool = new GetCmsPage($getPageByIdentifier, $this->mockStoreManager(), $this->storeTime());
 
         $this->expectException(\RuntimeException::class);
         $this->expectExceptionMessage('CMS page with identifier "missing" does not exist.');
@@ -77,7 +82,7 @@ class GetCmsPageTest extends TestCase
         $getPageByIdentifier = $this->createMock(GetPageByIdentifierInterface::class);
         $getPageByIdentifier->method('execute')->willReturn($page);
 
-        $tool = new GetCmsPage($getPageByIdentifier, $this->mockStoreManager());
+        $tool = new GetCmsPage($getPageByIdentifier, $this->mockStoreManager(), $this->storeTime());
 
         $this->expectException(\RuntimeException::class);
         $this->expectExceptionMessage('CMS page with identifier "draft" does not exist.');
@@ -103,7 +108,7 @@ class GetCmsPageTest extends TestCase
         $getPageByIdentifier = $this->createMock(GetPageByIdentifierInterface::class);
         $getPageByIdentifier->method('execute')->with('about-us', 1)->willReturn($page);
 
-        $tool = new GetCmsPage($getPageByIdentifier, $this->mockStoreManager());
+        $tool = new GetCmsPage($getPageByIdentifier, $this->mockStoreManager(), $this->storeTime());
 
         $result = $tool->execute(['identifier' => 'about-us']);
 

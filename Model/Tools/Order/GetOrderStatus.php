@@ -6,13 +6,15 @@ namespace Yu\McpServer\Model\Tools\Order;
 
 use Magento\Framework\Api\SearchCriteriaBuilder;
 use Magento\Sales\Api\OrderRepositoryInterface;
+use Yu\McpServer\Model\StoreTime;
 use Yu\McpServer\Model\ToolInterface;
 
 class GetOrderStatus implements ToolInterface
 {
     public function __construct(
         private readonly OrderRepositoryInterface $orderRepository,
-        private readonly SearchCriteriaBuilder $searchCriteriaBuilder
+        private readonly SearchCriteriaBuilder $searchCriteriaBuilder,
+        private readonly StoreTime $storeTime
     ) {
     }
 
@@ -85,7 +87,7 @@ class GetOrderStatus implements ToolInterface
             'order_number' => $order->getIncrementId(),
             'status' => $order->getStatus(),
             'grand_total' => $order->getGrandTotal(),
-            'created_at' => $order->getCreatedAt(),
+            'created_at' => $this->storeTime->toLocal($order->getCreatedAt()),
         ];
     }
 }

@@ -7,6 +7,7 @@ namespace Yu\McpServer\Model\Tools\Order;
 use Magento\Framework\Api\SearchCriteriaBuilder;
 use Magento\Framework\Api\SortOrderBuilder;
 use Magento\Sales\Api\OrderRepositoryInterface;
+use Yu\McpServer\Model\StoreTime;
 use Yu\McpServer\Model\ToolInterface;
 
 /**
@@ -22,7 +23,8 @@ class ListOrders implements ToolInterface
     public function __construct(
         private readonly OrderRepositoryInterface $orderRepository,
         private readonly SearchCriteriaBuilder $searchCriteriaBuilder,
-        private readonly SortOrderBuilder $sortOrderBuilder
+        private readonly SortOrderBuilder $sortOrderBuilder,
+        private readonly StoreTime $storeTime
     ) {
     }
 
@@ -42,7 +44,8 @@ class ListOrders implements ToolInterface
         return 'Lists orders across all customers, newest first, with optional status and '
             . 'date-range filters. Returns order number, date, status, grand total, currency, '
             . 'customer name/email and item quantity. Typical use: "orders placed today", '
-            . '"orders stuck in processing". Dates are compared in UTC. Use order_get '
+            . '"orders stuck in processing". Dates are in store local time '
+            . '(store_info reports the timezone). Use order_get '
             . 'for one order\'s full details.';
     }
 
@@ -61,12 +64,12 @@ class ListOrders implements ToolInterface
                 ],
                 'created_from' => [
                     'type' => 'string',
-                    'description' => 'Only orders placed at or after this UTC date, '
+                    'description' => 'Only orders placed at or after this date (store local time), '
                         . '"YYYY-MM-DD" or "YYYY-MM-DD HH:MM:SS".',
                 ],
                 'created_to' => [
                     'type' => 'string',
-                    'description' => 'Only orders placed at or before this UTC date, '
+                    'description' => 'Only orders placed at or before this date (store local time), '
                         . '"YYYY-MM-DD" (whole day included) or "YYYY-MM-DD HH:MM:SS".',
                 ],
                 'limit' => [
@@ -111,10 +114,10 @@ class ListOrders implements ToolInterface
             $this->searchCriteriaBuilder->addFilter('status', $status);
         }
         if ($createdFrom !== null) {
-            $this->searchCriteriaBuilder->addFilter('created_at', $createdFrom, 'gteq');
+            $this->searchCriteriaBuilder->addFilter('created_at', $this->storeTime->toUtc($createdFrom), 'gteq');
         }
         if ($createdTo !== null) {
-            $this->searchCriteriaBuilder->addFilter('created_at', $createdTo, 'lteq');
+            $this->searchCriteriaBuilder->addFilter('created_at', $this->storeTime->toUtc($createdTo), 'lteq');
         }
 
         $sortOrder = $this->sortOrderBuilder
@@ -134,7 +137,7 @@ class ListOrders implements ToolInterface
         foreach ($searchResult->getItems() as $order) {
             $orders[] = [
                 'order_number' => $order->getIncrementId(),
-                'created_at' => $order->getCreatedAt(),
+                'created_at' => $this->storeTime->toLocal($order->getCreatedAt()),
                 'status' => $order->getStatus(),
                 'grand_total' => (float)$order->getGrandTotal(),
                 'currency' => $order->getOrderCurrencyCode(),

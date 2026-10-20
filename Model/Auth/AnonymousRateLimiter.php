@@ -4,8 +4,6 @@ declare(strict_types=1);
 
 namespace Yu\McpServer\Model\Auth;
 
-use Magento\Framework\App\CacheInterface;
-
 /**
  * Throttles anonymous POST /mcp requests by IP. Authenticated callers are exempt — they
  * already proved who they are, and their damage potential is bounded by ACL, not volume.
@@ -14,57 +12,29 @@ use Magento\Framework\App\CacheInterface;
  */
 class AnonymousRateLimiter
 {
-    private const CACHE_TAG = 'MCP_ANON_CALLS';
     private const MAX_REQUESTS = 60;
     private const WINDOW_SECONDS = 60;
 
-    public function __construct(private readonly CacheInterface $cache)
+    public function __construct(private readonly FixedWindowCounter $counter)
     {
     }
 
     /**
-     * Records one anonymous request for this IP and reports whether the IP is now over
-     * the per-minute limit. Counting before answering means a blocked client cannot
-     * keep the window fresh for free — it has to actually back off.
+     * Records one anonymous request for this IP and reports whether the IP is still within
+     * the per-minute limit. Rejected requests count too, so hammering doesn't pay off.
      *
-     * @param string $ipAddress Caller's IP address (proxy-aware, see getClientIp()).
+     * @param string $ipAddress Caller's IP address (see ClientIpResolver).
      */
     public function registerAndCheck(string $ipAddress): bool
     {
-        $requests = $this->getRequests($ipAddress) + 1;
-        $this->cache->save((string)$requests, $this->cacheId($ipAddress), [self::CACHE_TAG], self::WINDOW_SECONDS);
-
-        return $requests <= self::MAX_REQUESTS;
+        return $this->counter->increment('anon|' . $ipAddress, self::WINDOW_SECONDS) <= self::MAX_REQUESTS;
     }
 
     /**
-     * Seconds the client should wait before retrying (the full window — the cache backend
-     * doesn't expose the counter's remaining TTL, and a whole window is a safe upper bound).
+     * Seconds until the current window ends and the client may send requests again.
      */
     public function retryAfterSeconds(): int
     {
-        return self::WINDOW_SECONDS;
-    }
-
-    /**
-     * Current number of recent anonymous requests recorded for this IP.
-     *
-     * @param string $ipAddress Caller's IP address.
-     */
-    private function getRequests(string $ipAddress): int
-    {
-        $cached = $this->cache->load($this->cacheId($ipAddress));
-
-        return $cached !== false ? (int)$cached : 0;
-    }
-
-    /**
-     * Cache key for this IP's request counter.
-     *
-     * @param string $ipAddress Caller's IP address.
-     */
-    private function cacheId(string $ipAddress): string
-    {
-        return 'mcp_anon_calls_' . sha1($ipAddress);
+        return $this->counter->secondsUntilReset(self::WINDOW_SECONDS);
     }
 }

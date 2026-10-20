@@ -14,6 +14,9 @@ class Config
     private const XML_PATH_LOG_FULL_REQUESTS = 'mcp/general/log_full_requests';
     private const XML_PATH_ENABLE_WRITE_TOOLS = 'mcp/general/enable_write_tools';
     private const XML_PATH_ENABLE_PUBLIC_TOOLS = 'mcp/general/enable_public_tools';
+    private const XML_PATH_CLIENT_IP_HEADER = 'mcp/security/client_ip_header';
+    private const XML_PATH_TRUSTED_PROXIES = 'mcp/security/trusted_proxies';
+    private const XML_PATH_ALLOWED_REDIRECT_HOSTS = 'mcp/security/allowed_redirect_hosts';
 
     public function __construct(
         private readonly ScopeConfigInterface $scopeConfig
@@ -49,5 +52,49 @@ class Config
     public function isPublicToolsEnabled(): bool
     {
         return $this->scopeConfig->isSetFlag(self::XML_PATH_ENABLE_PUBLIC_TOOLS);
+    }
+
+    /**
+     * Request header carrying the real client IP when the store sits behind a proxy
+     * (e.g. "CF-Connecting-IP", "X-Forwarded-For"), or null to use REMOTE_ADDR only.
+     */
+    public function getClientIpHeader(): ?string
+    {
+        $header = trim((string)$this->scopeConfig->getValue(self::XML_PATH_CLIENT_IP_HEADER));
+
+        return $header !== '' ? $header : null;
+    }
+
+    /**
+     * Proxy addresses/CIDR ranges allowed to supply the client IP header.
+     *
+     * @return string[]
+     */
+    public function getTrustedProxies(): array
+    {
+        return $this->readList(self::XML_PATH_TRUSTED_PROXIES);
+    }
+
+    /**
+     * Hosts OAuth redirect URIs may point to (lowercase); empty means any host.
+     *
+     * @return string[]
+     */
+    public function getAllowedRedirectHosts(): array
+    {
+        return array_map('strtolower', $this->readList(self::XML_PATH_ALLOWED_REDIRECT_HOSTS));
+    }
+
+    /**
+     * Splits a comma/whitespace-separated config value into a list of non-empty entries.
+     *
+     * @param string $path Config path to read.
+     * @return string[]
+     */
+    private function readList(string $path): array
+    {
+        $value = (string)$this->scopeConfig->getValue($path);
+
+        return array_values(array_filter(preg_split('/[\s,]+/', $value) ?: [], 'strlen'));
     }
 }

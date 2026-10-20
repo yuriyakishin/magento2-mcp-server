@@ -11,9 +11,12 @@ use Magento\Sales\Model\ResourceModel\Order\Collection as OrderCollection;
 use Magento\Sales\Model\ResourceModel\Order\CollectionFactory as OrderCollectionFactory;
 use PHPUnit\Framework\TestCase;
 use Yu\McpServer\Model\Tools\Customer\SearchCustomers;
+use Yu\McpServer\Test\Unit\Model\StoreTimeMockTrait;
 
 class SearchCustomersTest extends TestCase
 {
+    use StoreTimeMockTrait;
+
     /**
      * Customer personal data — the tool must require the All Customers grid ACL resource.
      */
@@ -21,7 +24,8 @@ class SearchCustomersTest extends TestCase
     {
         $tool = new SearchCustomers(
             $this->createMock(CustomerCollectionFactory::class),
-            $this->createMock(OrderCollectionFactory::class)
+            $this->createMock(OrderCollectionFactory::class),
+            $this->storeTime()
         );
 
         $this->assertSame('Magento_Customer::manage', $tool->getRequiredAclResource());
@@ -38,7 +42,8 @@ class SearchCustomersTest extends TestCase
 
         $tool = new SearchCustomers(
             $customerCollectionFactory,
-            $this->createMock(OrderCollectionFactory::class)
+            $this->createMock(OrderCollectionFactory::class),
+            $this->storeTime()
         );
 
         foreach ([[], ['query' => ''], ['query' => '   ']] as $arguments) {
@@ -73,7 +78,8 @@ class SearchCustomersTest extends TestCase
 
         $tool = new SearchCustomers(
             $this->customerCollectionFactoryMock([$customer]),
-            $this->orderCollectionFactoryMock($orders)
+            $this->orderCollectionFactoryMock($orders),
+            $this->storeTime()
         );
 
         $result = $tool->execute(['query' => 'emma']);
@@ -97,7 +103,8 @@ class SearchCustomersTest extends TestCase
 
         $tool = new SearchCustomers(
             $this->customerCollectionFactoryMock([]),
-            $orderCollectionFactory
+            $orderCollectionFactory,
+            $this->storeTime()
         );
 
         $result = $tool->execute(['query' => 'nobody']);
